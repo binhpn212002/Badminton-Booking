@@ -4,3 +4,10 @@
 
 [build.environment]
   NODE_VERSION = "20"
+
+# Proxy BE API for browser calls on Netlify static hosting
+[[redirects]]
+  from = "/api/be/*"
+  to = "https://1f383m5q-3000.asse.devtunnels.ms/:splat"
+  status = 200
+  force = true

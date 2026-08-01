@@ -9,6 +9,7 @@ export type CourtPriceSlot = {
 export type Court = {
   id: string
   branchId: string
+  location?: string
   code: string
   name: string
   description: string

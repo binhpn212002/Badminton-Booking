@@ -1,46 +1,6 @@
-<script setup lang="ts">
-import { mockBranches } from '~/utils/mock-management'
-import { formatCurrency, formatDate } from '~/utils/format'
-
-definePageMeta({ layout: 'management' })
-
-const route = useRoute()
-const router = useRouter()
-const courtStore = useCourtStore()
-
-const id = computed(() => String(route.params.id))
-const court = computed(() => courtStore.getById(id.value))
-
-watch(
-  court,
-  (value) => {
-    if (!value) router.replace('/dashboard/courts')
-  },
-  { immediate: true },
-)
-
-const branchName = computed(
-  () => mockBranches.find((b) => b.id === court.value?.branchId)?.name ?? '—',
-)
-
-const boolLabel = (value: boolean) => (value ? 'Có' : 'Không')
-</script>
-
-<template>
-  <div v-if="court" class="space-y-4">
-    <div class="flex flex-wrap items-start justify-between gap-3">
-      <div>
-        <NuxtLink to="/dashboard/courts" class="text-sm text-gray-500 hover:text-gray-800">
-          ← Quay lại danh sách
-        </NuxtLink>
-        <div class="mt-2 flex flex-wrap items-center gap-3">
-          <h2 class="m-0 text-xl font-semibold text-gray-900">
-            {{ court.code }} — {{ court.name }}
-          </h2>
-          <CommonStatusTag :status="court.status" />
-        </div>
-        <p class="mb-0 mt-1 text-gray-500">{{ branchName }}</p>
-      </div>
+ <template>
+  <div>
+     <div>
       <a-button type="primary" @click="router.push(`/dashboard/courts/${court.id}/edit`)">
         Sửa sân
       </a-button>
@@ -53,7 +13,7 @@ const boolLabel = (value: boolean) => (value ? 'Có' : 'Không')
             <a-descriptions :column="1" size="small" bordered>
               <a-descriptions-item label="Mã sân">{{ court.code }}</a-descriptions-item>
               <a-descriptions-item label="Tên sân">{{ court.name }}</a-descriptions-item>
-              <a-descriptions-item label="Chi nhánh">{{ branchName }}</a-descriptions-item>
+              <a-descriptions-item label="Chi nhánh">{{ court.location || '—' }}</a-descriptions-item>
               <a-descriptions-item label="Mô tả">
                 {{ court.description || '—' }}
               </a-descriptions-item>

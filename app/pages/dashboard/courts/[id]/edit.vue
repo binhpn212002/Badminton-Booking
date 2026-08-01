@@ -8,12 +8,15 @@ const router = useRouter()
 const courtStore = useCourtStore()
 
 const id = computed(() => String(route.params.id))
+
+await courtStore.loadCourts().catch(() => undefined)
+
 const court = computed(() => courtStore.getById(id.value))
 
 watch(
-  court,
-  (value) => {
-    if (!value) router.replace('/dashboard/courts')
+  [court, () => courtStore.loaded],
+  ([value, loaded]) => {
+    if (loaded && !value) router.replace('/dashboard/courts')
   },
   { immediate: true },
 )

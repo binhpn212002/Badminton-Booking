@@ -4,6 +4,12 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   modules: ["@pinia/nuxt", "@nuxtjs/tailwindcss"],
   css: ["~/assets/css/main.css"],
+  runtimeConfig: {
+    public: {
+      apiBase: "/api/be",
+      apiOrigin: "https://1f383m5q-3000.asse.devtunnels.ms",
+    },
+  },
   nitro: {
     preset: "static",
   },

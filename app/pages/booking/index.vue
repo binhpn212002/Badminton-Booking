@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import type { Court } from '~/types/management'
-import { mockBranches, mockCourts } from '~/utils/mock-management'
 import { formatCurrency } from '~/utils/format'
 
 definePageMeta({ layout: 'booking' })
+
+const courtStore = useCourtStore()
+await courtStore.loadCourts().catch(() => undefined)
 
 const keyword = ref('')
 const address = ref<string | 'all'>('all')
@@ -11,12 +13,15 @@ const capacity = ref<number | 'all'>('all')
 const priceRange = ref<[number, number]>([0, 200000])
 const indoorOnly = ref(false)
 
-const courts = computed(() => mockCourts.filter((c) => c.status === 'ACTIVE'))
+const courts = computed(() => courtStore.courts.filter((c) => c.status === 'ACTIVE'))
 
-const addressOptions = [
-  { value: 'all', label: 'Tất cả địa chỉ' },
-  ...mockBranches.map((b) => ({ value: b.id, label: b.address })),
-]
+const addressOptions = computed(() => {
+  const locations = [...new Set(courts.value.map((c) => c.location).filter(Boolean))] as string[]
+  return [
+    { value: 'all', label: 'Tất cả địa chỉ' },
+    ...locations.map((loc) => ({ value: loc, label: loc })),
+  ]
+})
 
 const capacityOptions = [
   { value: 'all', label: 'Số người' },
@@ -24,22 +29,23 @@ const capacityOptions = [
   { value: 4, label: '4 người' },
 ]
 
-const branchOf = (branchId: string) => mockBranches.find((b) => b.id === branchId)
-
 const priceFrom = (court: Court) =>
   court.priceSlots.length ? Math.min(...court.priceSlots.map((s) => s.price)) : 0
+
+const coverOf = (court: Court) =>
+  court.image ||
+  'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=900&q=80'
 
 const filteredCourts = computed(() => {
   const q = keyword.value.trim().toLowerCase()
   return courts.value.filter((court) => {
-    const branch = branchOf(court.branchId)
     const price = priceFrom(court)
     const matchKeyword =
       !q ||
       court.name.toLowerCase().includes(q) ||
       court.code.toLowerCase().includes(q) ||
-      (branch?.address ?? '').toLowerCase().includes(q)
-    const matchAddress = address.value === 'all' || court.branchId === address.value
+      (court.location || '').toLowerCase().includes(q)
+    const matchAddress = address.value === 'all' || court.location === address.value
     const matchCapacity = capacity.value === 'all' || court.capacity >= Number(capacity.value)
     const matchPrice = price >= priceRange.value[0] && price <= priceRange.value[1]
     const matchIndoor = !indoorOnly.value || court.indoor
@@ -87,6 +93,9 @@ function resetFilters() {
           <span>Chỉ sân trong nhà</span>
         </label>
         <a-button block @click="resetFilters">Đặt lại</a-button>
+        <a-button block :loading="courtStore.loading" @click="courtStore.loadCourts(true)">
+          Tải lại từ API
+        </a-button>
       </aside>
 
       <section class="results">
@@ -94,37 +103,47 @@ function resetFilters() {
           <h2>{{ filteredCourts.length }} sân phù hợp</h2>
         </div>
 
-        <div v-if="filteredCourts.length" class="court-list">
-          <article v-for="court in filteredCourts" :key="court.id" class="court-card">
-            <div
-              class="court-cover"
-              :style="{
-                backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.05), rgba(0,0,0,0.45)), url(https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=900&q=80)`,
-              }"
-            >
-              <span class="court-code">{{ court.code }}</span>
-            </div>
-            <div class="court-body">
-              <div class="court-top">
-                <h3>{{ court.name }}</h3>
-                <strong>{{ formatCurrency(priceFrom(court)) }}/giờ</strong>
-              </div>
-              <p class="addr">{{ branchOf(court.branchId)?.address }}</p>
-              <div class="tags">
-                <span>{{ court.capacity }} người</span>
-                <span>{{ court.surface }}</span>
-                <span>{{ court.indoor ? 'Trong nhà' : 'Ngoài trời' }}</span>
-                <span>{{ court.availableFrom }}–{{ court.availableTo }}</span>
-              </div>
-              <p class="desc">{{ court.description }}</p>
-              <div class="actions">
-                <a-button type="primary">Chọn khung giờ</a-button>
-              </div>
-            </div>
-          </article>
-        </div>
+        <a-alert
+          v-if="courtStore.error"
+          class="mb-4"
+          type="error"
+          show-icon
+          :message="courtStore.error"
+        />
 
-        <a-empty v-else description="Không tìm thấy sân phù hợp" />
+        <a-spin :spinning="courtStore.loading">
+          <div v-if="filteredCourts.length" class="court-list">
+            <article v-for="court in filteredCourts" :key="court.id" class="court-card">
+              <div
+                class="court-cover"
+                :style="{
+                  backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.05), rgba(0,0,0,0.45)), url(${coverOf(court)})`,
+                }"
+              >
+                <span class="court-code">{{ court.code }}</span>
+              </div>
+              <div class="court-body">
+                <div class="court-top">
+                  <h3>{{ court.name }}</h3>
+                  <strong>{{ formatCurrency(priceFrom(court)) }}/giờ</strong>
+                </div>
+                <p class="addr">{{ court.location || '—' }}</p>
+                <div class="tags">
+                  <span>{{ court.capacity }} người</span>
+                  <span>{{ court.surface }}</span>
+                  <span>{{ court.indoor ? 'Trong nhà' : 'Ngoài trời' }}</span>
+                  <span>{{ court.availableFrom }}–{{ court.availableTo }}</span>
+                </div>
+                <p class="desc">{{ court.description }}</p>
+                <div class="actions">
+                  <a-button type="primary">Chọn khung giờ</a-button>
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <a-empty v-else description="Không tìm thấy sân phù hợp" />
+        </a-spin>
       </section>
     </div>
   </div>
