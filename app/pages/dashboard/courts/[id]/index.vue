@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { formatCurrency, formatDate } from '~/utils/format'
+import { API_COURT_SURFACE_OPTIONS } from '~/types/api'
 
 definePageMeta({ layout: 'management' })
 
@@ -16,6 +17,11 @@ if (!court) {
 }
 
 const boolLabel = (value: boolean) => (value ? 'Có' : 'Không')
+
+const surfaceLabel = computed(() => {
+  const opt = API_COURT_SURFACE_OPTIONS.find((o) => o.value === court?.surface)
+  return opt?.label || court?.surface || '—'
+})
 </script>
 <template>
   <div v-if="court" class="space-y-4">
@@ -44,15 +50,15 @@ const boolLabel = (value: boolean) => (value ? 'Có' : 'Không')
             <a-descriptions :column="1" size="small" bordered>
               <a-descriptions-item label="Mã sân">{{ court.code }}</a-descriptions-item>
               <a-descriptions-item label="Tên sân">{{ court.name }}</a-descriptions-item>
-              <a-descriptions-item label="Chi nhánh">{{ court?.location || '—' }}</a-descriptions-item>
+              <a-descriptions-item label="Địa điểm">{{ court.location || '—' }}</a-descriptions-item>
               <a-descriptions-item label="Mô tả">
-                {{ court?.description || '—' }}
+                {{ court.description || '—' }}
               </a-descriptions-item>
-              <a-descriptions-item label="Ảnh đại diện">
-                {{ court?.image || '—' }}
+              <a-descriptions-item label="Ảnh">
+                {{ court.image || '—' }}
               </a-descriptions-item>
               <a-descriptions-item label="Ngày tạo">
-                {{ formatDate(court?.createdAt) }}
+                {{ formatDate(court.createdAt) }}
               </a-descriptions-item>
             </a-descriptions>
           </a-card>
@@ -60,34 +66,32 @@ const boolLabel = (value: boolean) => (value ? 'Có' : 'Không')
           <a-card title="Thông tin vật lý" size="small">
             <a-descriptions :column="1" size="small" bordered>
               <a-descriptions-item label="Kích thước">
-                {{ court?.length }} × {{ court?.width }} m
+                {{ court.width }} × {{ court.length }} m
               </a-descriptions-item>
-              <a-descriptions-item label="Số người">{{ court?.capacity }}</a-descriptions-item>
-              <a-descriptions-item label="Mặt sân">{{ court?.surface }}</a-descriptions-item>
-              <a-descriptions-item label="Loại sàn">{{ court?.floorType }}</a-descriptions-item>
-              <a-descriptions-item label="Đèn">{{ court?.lighting }}</a-descriptions-item>
+              <a-descriptions-item label="Số người">{{ court.capacity }}</a-descriptions-item>
+              <a-descriptions-item label="Mặt sân">{{ surfaceLabel }}</a-descriptions-item>
               <a-descriptions-item label="Chiều cao trần">
-                {{ court?.ceilingHeight }} m
+                {{ court.ceilingHeight }} m
               </a-descriptions-item>
               <a-descriptions-item label="Trong nhà">
-                {{ boolLabel(court?.indoor) }}
+                {{ boolLabel(court.indoor) }}
               </a-descriptions-item>
               <a-descriptions-item label="Máy lạnh">
-                {{ boolLabel(court?.airCondition) }}
+                {{ boolLabel(court.airCondition) }}
               </a-descriptions-item>
-              <a-descriptions-item label="Quạt">{{ boolLabel(court?.fan) }}</a-descriptions-item>
+              <a-descriptions-item label="Quạt">{{ boolLabel(court.fan) }}</a-descriptions-item>
             </a-descriptions>
           </a-card>
 
-          <a-card title="Bảng giá theo khung giờ" size="small">
+          <a-card title="Khung giờ giá" size="small">
             <a-table
               :pagination="false"
               size="small"
               row-key="from"
-              :data-source="court?.priceSlots"
+              :data-source="court.priceSlots"
               :columns="[
-                { title: 'Từ', dataIndex: 'from', key: 'from' },
-                { title: 'Đến', dataIndex: 'to', key: 'to' },
+                { title: 'Bắt đầu', dataIndex: 'from', key: 'from' },
+                { title: 'Kết thúc', dataIndex: 'to', key: 'to' },
                 { title: 'Giá', dataIndex: 'price', key: 'price' },
               ]"
             >
@@ -101,11 +105,11 @@ const boolLabel = (value: boolean) => (value ? 'Có' : 'Không')
 
           <a-card title="Tình trạng & giờ mở" size="small">
             <a-descriptions :column="1" size="small" bordered>
-              <a-descriptions-item label="Đang khả dụng">
-                {{ boolLabel(court?.isAvailable) }}
+              <a-descriptions-item label="Đang hoạt động">
+                {{ boolLabel(court.isAvailable) }}
               </a-descriptions-item>
               <a-descriptions-item label="Đang bảo trì">
-                {{ boolLabel(court?.isMaintenance) }}
+                {{ boolLabel(court.isMaintenance) }}
               </a-descriptions-item>
               <a-descriptions-item label="Lý do bảo trì">
                 {{ court.maintenanceReason || '—' }}

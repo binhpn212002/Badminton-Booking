@@ -6,7 +6,6 @@ export function useApiClient() {
 
   const headers: Record<string, string> = {
     Accept: "application/json",
-    "X-Tenant": "1",
   };
 
   if (import.meta.client) {
@@ -36,12 +35,27 @@ export async function fetchCourtById(id: number) {
   });
 }
 
-export async function createCourt(court: Partial<ApiCourt>) {
+export type CourtWritePayload = Omit<
+  ApiCourt,
+  "id" | "createdAt" | "updatedAt" | "deletedAt" | "timeSlots"
+> & {
+  timeSlots: Array<{ start: number; end: number; price: number }>;
+};
+
+export async function createCourt(court: CourtWritePayload) {
   const { base, headers } = useApiClient();
   return await $fetch<ApiCourt>(`${base}/court`, {
     method: "POST",
     body: court,
     headers,
-    query: { tenant: 1 },
+  });
+}
+
+export async function updateCourt(id: number, court: CourtWritePayload) {
+  const { base, headers } = useApiClient();
+  return await $fetch<ApiCourt>(`${base}/court/${id}`, {
+    method: "PUT",
+    body: court,
+    headers,
   });
 }

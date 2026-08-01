@@ -131,9 +131,6 @@ async function handleSubmit() {
   <a-form layout="vertical" @finish="handleSubmit">
     <a-card class="mb-4" title="Thông tin cơ bản">
       <div class="grid grid-cols-1 gap-x-4 md:grid-cols-2">
-        <a-form-item label="Chi nhánh" name="branchId" :rules="[{ required: true }]">
-          <CommonClientSelect v-model:value="form.branchId" :options="branchOptions" />
-        </a-form-item>
         <a-form-item label="Mã sân" name="code" :rules="[{ required: true, message: 'Nhập mã sân' }]">
           <a-input v-model:value="form.code" placeholder="S1, S2..." />
         </a-form-item>
@@ -145,9 +142,6 @@ async function handleSubmit() {
         </a-form-item>
         <a-form-item label="Ảnh đại diện" class="md:col-span-2">
           <a-input v-model:value="form.image" placeholder="URL ảnh" />
-        </a-form-item>
-        <a-form-item label="Gallery (mỗi URL 1 dòng)" class="md:col-span-2">
-          <a-textarea v-model:value="form.galleryText" :rows="3" placeholder="/courts/s1-1.jpg" />
         </a-form-item>
         <a-form-item label="Mô tả" class="md:col-span-2">
           <a-textarea v-model:value="form.description" :rows="3" />
@@ -169,14 +163,8 @@ async function handleSubmit() {
         <a-form-item label="Mặt sân">
           <a-input v-model:value="form.surface" />
         </a-form-item>
-        <a-form-item label="Loại sàn">
-          <a-input v-model:value="form.floorType" />
-        </a-form-item>
         <a-form-item label="Chiều cao trần (m)">
           <a-input-number v-model:value="form.ceilingHeight" class="!w-full" :min="0" :step="0.1" />
-        </a-form-item>
-        <a-form-item label="Đèn">
-          <a-input v-model:value="form.lighting" />
         </a-form-item>
         <a-form-item label="Trong nhà">
           <a-switch v-model:checked="form.indoor" />

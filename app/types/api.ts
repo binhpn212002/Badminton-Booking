@@ -15,6 +15,24 @@ export type ApiTimestamps = {
 
 export type ApiCourtStatus = 'active' | 'inactive' | 'under_maintenance'
 
+export type ApiCourtSurface =
+  | 'pvc'
+  | 'hardcourt'
+  | 'clay'
+  | 'carpet'
+  | 'synthetic_grass'
+
+export const API_COURT_SURFACE_OPTIONS: Array<{
+  value: ApiCourtSurface
+  label: string
+}> = [
+  { value: 'pvc', label: 'PVC' },
+  { value: 'hardcourt', label: 'Hardcourt' },
+  { value: 'clay', label: 'Clay' },
+  { value: 'carpet', label: 'Carpet' },
+  { value: 'synthetic_grass', label: 'Synthetic grass' },
+]
+
 export type ApiCourtTimeSlot = ApiTimestamps & {
   id: number
   start: number
@@ -33,7 +51,7 @@ export type ApiCourt = ApiTimestamps & {
   width: number
   height: number
   peopleCapacity: number
-  courtType: string
+  surface: ApiCourtSurface
   roofHeight: number
   isIndoor: boolean
   hasConditioning: boolean
