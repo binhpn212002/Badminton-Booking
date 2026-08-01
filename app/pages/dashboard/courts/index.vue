@@ -70,7 +70,7 @@ async function onConfirmDelete() {
         placeholder="Tìm theo mã, tên hoặc địa chỉ"
         class="max-w-xs"
       />
-      <a-select v-model:value="status" :options="statusOptions" class="!w-44" />
+      <CommonClientSelect v-model:value="status" :options="statusOptions" class="!w-44" />
       <a-button @click="resetFilters">Đặt lại</a-button>
       <a-button :loading="courtStore.loading" @click="courtStore.loadCourts(true)">
         Tải lại

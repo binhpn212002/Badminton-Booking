@@ -80,8 +80,8 @@ function resetFilters() {
           allow-clear
           placeholder="Tìm theo tên sân, mã, địa chỉ"
         />
-        <a-select v-model:value="address" class="!w-full" :options="addressOptions" />
-        <a-select v-model:value="capacity" class="!w-full" :options="capacityOptions" />
+        <CommonClientSelect v-model:value="address" class="!w-full" :options="addressOptions" />
+        <CommonClientSelect v-model:value="capacity" class="!w-full" :options="capacityOptions" />
         <div>
           <div class="filter-label">
             Giá từ {{ formatCurrency(priceRange[0]) }} – {{ formatCurrency(priceRange[1]) }}

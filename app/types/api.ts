@@ -1,20 +1,29 @@
+/** Generic response cho các API danh sách (paginate). */
+export type ApiListResponse<T> = {
+  data: T[]
+  total: number
+  page: number
+  limit: number
+}
+
+/** Timestamps chuẩn từ BE. */
+export type ApiTimestamps = {
+  createdAt: string
+  updatedAt: string
+  deletedAt: string | null
+}
+
 export type ApiCourtStatus = 'active' | 'inactive' | 'under_maintenance'
 
-export type ApiCourtTimeSlot = {
+export type ApiCourtTimeSlot = ApiTimestamps & {
   id: number
-  createAt?: string
-  updateAt?: string
-  deleteAt?: string | null
   start: number
   end: number
   price: number
 }
 
-export type ApiCourt = {
+export type ApiCourt = ApiTimestamps & {
   id: number
-  createAt: string
-  updateAt: string
-  deleteAt: string | null
   name: string
   location: string
   courtCode: string

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import AppSidebar from '~/components/layout/AppSidebar.vue'
+
 const collapsed = ref(false)
 const route = useRoute()
 
@@ -32,7 +34,7 @@ const pageTitle = computed(() => {
 
 <template>
   <a-layout class="min-h-screen">
-    <LayoutAppSidebar v-model:collapsed="collapsed" />
+    <AppSidebar v-model:collapsed="collapsed" />
     <a-layout>
       <a-layout-header class="mgmt-header flex items-center px-6">
         <h1 class="m-0 text-base font-semibold text-gray-800">{{ pageTitle }}</h1>

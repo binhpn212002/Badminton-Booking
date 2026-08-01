@@ -1,6 +1,37 @@
- <template>
-  <div>
-     <div>
+<script setup lang="ts">
+import { formatCurrency, formatDate } from '~/utils/format'
+
+definePageMeta({ layout: 'management' })
+
+const route = useRoute()
+const router = useRouter()
+const courtStore = useCourtStore()
+
+const id = computed(() => String(route.params.id))
+
+const court = await courtStore.fetchById(id.value).catch(() => null)
+
+if (!court) {
+  await router.replace('/dashboard/courts')
+}
+
+const boolLabel = (value: boolean) => (value ? 'Có' : 'Không')
+</script>
+<template>
+  <div v-if="court" class="space-y-4">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <NuxtLink to="/dashboard/courts" class="text-sm text-gray-500 hover:text-gray-800">
+          ← Quay lại danh sách
+        </NuxtLink>
+        <div class="mt-2 flex flex-wrap items-center gap-3">
+          <h2 class="m-0 text-xl font-semibold text-gray-900">
+            {{ court.code }} — {{ court.name }}
+          </h2>
+          <CommonStatusTag :status="court?.status ?? 'inactive'" />
+        </div>
+        <p class="mb-0 mt-1 text-gray-500">{{ court.location || '—' }}</p>
+      </div>
       <a-button type="primary" @click="router.push(`/dashboard/courts/${court.id}/edit`)">
         Sửa sân
       </a-button>
@@ -13,18 +44,15 @@
             <a-descriptions :column="1" size="small" bordered>
               <a-descriptions-item label="Mã sân">{{ court.code }}</a-descriptions-item>
               <a-descriptions-item label="Tên sân">{{ court.name }}</a-descriptions-item>
-              <a-descriptions-item label="Chi nhánh">{{ court.location || '—' }}</a-descriptions-item>
+              <a-descriptions-item label="Chi nhánh">{{ court?.location || '—' }}</a-descriptions-item>
               <a-descriptions-item label="Mô tả">
-                {{ court.description || '—' }}
+                {{ court?.description || '—' }}
               </a-descriptions-item>
               <a-descriptions-item label="Ảnh đại diện">
-                {{ court.image || '—' }}
-              </a-descriptions-item>
-              <a-descriptions-item label="Gallery">
-                {{ court.gallery.length ? court.gallery.join(', ') : '—' }}
+                {{ court?.image || '—' }}
               </a-descriptions-item>
               <a-descriptions-item label="Ngày tạo">
-                {{ formatDate(court.createdAt) }}
+                {{ formatDate(court?.createdAt) }}
               </a-descriptions-item>
             </a-descriptions>
           </a-card>
@@ -32,22 +60,22 @@
           <a-card title="Thông tin vật lý" size="small">
             <a-descriptions :column="1" size="small" bordered>
               <a-descriptions-item label="Kích thước">
-                {{ court.length }} × {{ court.width }} m
+                {{ court?.length }} × {{ court?.width }} m
               </a-descriptions-item>
-              <a-descriptions-item label="Số người">{{ court.capacity }}</a-descriptions-item>
-              <a-descriptions-item label="Mặt sân">{{ court.surface }}</a-descriptions-item>
-              <a-descriptions-item label="Loại sàn">{{ court.floorType }}</a-descriptions-item>
-              <a-descriptions-item label="Đèn">{{ court.lighting }}</a-descriptions-item>
+              <a-descriptions-item label="Số người">{{ court?.capacity }}</a-descriptions-item>
+              <a-descriptions-item label="Mặt sân">{{ court?.surface }}</a-descriptions-item>
+              <a-descriptions-item label="Loại sàn">{{ court?.floorType }}</a-descriptions-item>
+              <a-descriptions-item label="Đèn">{{ court?.lighting }}</a-descriptions-item>
               <a-descriptions-item label="Chiều cao trần">
-                {{ court.ceilingHeight }} m
+                {{ court?.ceilingHeight }} m
               </a-descriptions-item>
               <a-descriptions-item label="Trong nhà">
-                {{ boolLabel(court.indoor) }}
+                {{ boolLabel(court?.indoor) }}
               </a-descriptions-item>
               <a-descriptions-item label="Máy lạnh">
-                {{ boolLabel(court.airCondition) }}
+                {{ boolLabel(court?.airCondition) }}
               </a-descriptions-item>
-              <a-descriptions-item label="Quạt">{{ boolLabel(court.fan) }}</a-descriptions-item>
+              <a-descriptions-item label="Quạt">{{ boolLabel(court?.fan) }}</a-descriptions-item>
             </a-descriptions>
           </a-card>
 
@@ -56,7 +84,7 @@
               :pagination="false"
               size="small"
               row-key="from"
-              :data-source="court.priceSlots"
+              :data-source="court?.priceSlots"
               :columns="[
                 { title: 'Từ', dataIndex: 'from', key: 'from' },
                 { title: 'Đến', dataIndex: 'to', key: 'to' },
@@ -74,10 +102,10 @@
           <a-card title="Tình trạng & giờ mở" size="small">
             <a-descriptions :column="1" size="small" bordered>
               <a-descriptions-item label="Đang khả dụng">
-                {{ boolLabel(court.isAvailable) }}
+                {{ boolLabel(court?.isAvailable) }}
               </a-descriptions-item>
               <a-descriptions-item label="Đang bảo trì">
-                {{ boolLabel(court.isMaintenance) }}
+                {{ boolLabel(court?.isMaintenance) }}
               </a-descriptions-item>
               <a-descriptions-item label="Lý do bảo trì">
                 {{ court.maintenanceReason || '—' }}

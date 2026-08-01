@@ -6,8 +6,9 @@ export default defineNuxtConfig({
   css: ["~/assets/css/main.css"],
   runtimeConfig: {
     public: {
-      apiBase: "/api/be",
-      apiOrigin: "https://1f383m5q-3000.asse.devtunnels.ms",
+      // Local BE. Override: NUXT_PUBLIC_API_BASE=http://localhost:3001
+      apiBase: "http://localhost:3001",
+      apiOrigin: "http://localhost:3001",
     },
   },
   nitro: {

@@ -52,7 +52,7 @@ async function onConfirmDelete() {
         placeholder="Tìm theo tên, email hoặc SĐT"
         class="max-w-xs"
       />
-      <a-select v-model:value="status" :options="statusOptions" class="!w-44" />
+      <CommonClientSelect v-model:value="status" :options="statusOptions" class="!w-44" />
       <a-button @click="resetFilters">Đặt lại</a-button>
       <div class="ml-auto">
         <a-button type="primary">Thêm người dùng</a-button>

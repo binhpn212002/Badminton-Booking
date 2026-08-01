@@ -16,25 +16,22 @@ Pinia Store (app/stores/court.ts)
     │  gọi service.fetchCourts()
     ▼
 Service (app/services/court.ts)
-    │  $fetch<ApiCourt[]>('/api/be/court')
-    ▼
-Proxy / Runtime config
-    │  /api/be/*  →  BE origin (devtunnel/API thật)
+    │  $fetch<ApiListResponse<ApiCourt>>('/court')
     ▼
 Backend API  GET /court
-    │  trả JSON thô (ApiCourt[])
+    │  trả { data, total, page, limit }
     ▼
 Mapper (app/utils/map-court.ts)
-    │  ApiCourt → Court (model FE)
+    │  res.data.map(ApiCourt → Court)
     ▼
-Store lưu Court[] → Page render UI
+Store lưu Court[] + total/page/limit → Page render UI
 ```
 
 **Nguyên tắc:**
 
 | Lớp | Nhiệm vụ | Không làm |
 |-----|----------|-----------|
-| `types/api.ts` | Type đúng shape BE trả về | Không dùng trực tiếp trong UI phức tạp |
+| `types/api.ts` | Type đúng shape BE (`ApiListResponse<T>`, `ApiCourt`…) | Không dùng trực tiếp trong UI phức tạp |
 | `services/*` | Gọi HTTP (`$fetch`) | Không map UI, không lưu state |
 | `utils/map-*.ts` | Đổi tên field / format cho FE | Không gọi API |
 | `stores/*` | State, loading, error, gọi service + map | Không viết HTML |
@@ -60,31 +57,42 @@ Ghi nhận:
 
 ## 3. Bước 2 — Định nghĩa type BE (`app/types/api.ts`)
 
-Type **bám đúng JSON backend**, không “đẹp hóa” sớm:
+### Generic list response (mọi API danh sách)
 
 ```ts
-export type ApiCourtStatus = 'active' | 'inactive' | 'under_maintenance'
-
-export type ApiCourtTimeSlot = {
-  id: number
-  start: number   // giờ: 6, 8, 17...
-  end: number
-  price: number
+export type ApiListResponse<T> = {
+  data: T[]
+  total: number
+  page: number
+  limit: number
 }
+```
 
+Ví dụ: `ApiListResponse<ApiCourt>`, `ApiListResponse<ApiEquipment>`.
+
+### Entity type — bám đúng JSON backend
+
+```ts
 export type ApiCourt = {
   id: number
+  createdAt: string
+  updatedAt: string
+  deletedAt: string | null
   name: string
-  location: string
   courtCode: string
-  status: ApiCourtStatus
-  imageUrl: string
-  // ... các field khác từ BE
+  // ...
   timeSlots: ApiCourtTimeSlot[]
 }
 ```
 
-Dùng type này làm generic cho `$fetch<ApiCourt[]>` để TypeScript bắt lỗi khi BE đổi field.
+Service gọi list:
+
+```ts
+const res = await $fetch<ApiListResponse<ApiCourt>>(`${base}/court`, {
+  query: { page: 1, limit: 10 },
+})
+// res.data, res.total, res.page, res.limit
+```
 
 ---
 

@@ -132,7 +132,7 @@ async function handleSubmit() {
     <a-card class="mb-4" title="Thông tin cơ bản">
       <div class="grid grid-cols-1 gap-x-4 md:grid-cols-2">
         <a-form-item label="Chi nhánh" name="branchId" :rules="[{ required: true }]">
-          <a-select v-model:value="form.branchId" :options="branchOptions" />
+          <CommonClientSelect v-model:value="form.branchId" :options="branchOptions" />
         </a-form-item>
         <a-form-item label="Mã sân" name="code" :rules="[{ required: true, message: 'Nhập mã sân' }]">
           <a-input v-model:value="form.code" placeholder="S1, S2..." />
@@ -141,7 +141,7 @@ async function handleSubmit() {
           <a-input v-model:value="form.name" />
         </a-form-item>
         <a-form-item label="Trạng thái" name="status" :rules="[{ required: true }]">
-          <a-select v-model:value="form.status" :options="statusOptions" />
+          <CommonClientSelect v-model:value="form.status" :options="statusOptions" />
         </a-form-item>
         <a-form-item label="Ảnh đại diện" class="md:col-span-2">
           <a-input v-model:value="form.image" placeholder="URL ảnh" />

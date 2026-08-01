@@ -22,7 +22,7 @@ const form = reactive({
         <a-input v-model:value="form.oaId" />
       </a-form-item>
       <a-form-item label="Trạng thái">
-        <a-select
+        <CommonClientSelect
           v-model:value="form.status"
           :options="[
             { value: 'active', label: 'Hoạt động' },

@@ -42,6 +42,6 @@ export function mapApiCourtToCourt(api: ApiCourt): Court {
     maintenanceReason: api.reasonForMaintenance || '',
     availableFrom: api.openingHours || '06:00',
     availableTo: api.endingHours || '22:00',
-    createdAt: api.createAt,
+    createdAt: api.createdAt,
   }
 }

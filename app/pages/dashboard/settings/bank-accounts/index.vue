@@ -63,7 +63,7 @@ async function onConfirmDelete() {
         placeholder="Tìm theo ngân hàng, STK hoặc chủ TK"
         class="max-w-xs"
       />
-      <a-select v-model:value="defaultOnly" :options="defaultOptions" class="!w-44" />
+      <CommonClientSelect v-model:value="defaultOnly" :options="defaultOptions" class="!w-44" />
       <a-button @click="resetFilters">Đặt lại</a-button>
       <div class="ml-auto">
         <a-button type="primary">Thêm tài khoản</a-button>

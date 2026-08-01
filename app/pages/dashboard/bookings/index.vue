@@ -41,7 +41,7 @@ const columns: TableColumnsType<Booking> = [
         placeholder="Tìm theo mã, khách hàng hoặc sân"
         class="max-w-xs"
       />
-      <a-select v-model:value="status" :options="statusOptions" class="!w-44" />
+      <CommonClientSelect v-model:value="status" :options="statusOptions" class="!w-44" />
       <a-button @click="resetFilters">Đặt lại</a-button>
     </div>
 
