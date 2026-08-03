@@ -5,6 +5,19 @@
 [build.environment]
   NODE_VERSION = "20"
 
+# Avoid 301 for legal pages (TikTok URL checks often fail on redirects)
+[[redirects]]
+  from = "/terms"
+  to = "/terms/"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/privacy"
+  to = "/privacy/"
+  status = 200
+  force = true
+
 # Serve TikTok signature when crawler hits the URL prefix folder
 [[redirects]]
   from = "/tiktok"
