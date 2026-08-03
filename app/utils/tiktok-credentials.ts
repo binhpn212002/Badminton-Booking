@@ -8,5 +8,8 @@ export const TIKTOK_CLIENT_SECRET = "TAI1y7bQRhTiMc06jlxwTsjxplGmbI4m";
 export const TIKTOK_REDIRECT_URI =
   "https://badmintion-booking.netlify.app/auth/tiktok/callback";
 
-/** Scope xin khi authorize — phải bật sẵn trên Portal (Sandbox). */
-export const TIKTOK_SCOPES = "user.info.basic,video.upload";
+/** Scope xin khi authorize — phải bật sẵn trên Portal (Sandbox).
+ * - video.upload  → /v2/post/publish/inbox/video/init/ (draft inbox)
+ * - video.publish → /v2/post/publish/video/init/ (direct post)
+ */
+export const TIKTOK_SCOPES = "user.info.basic,video.upload,video.publish";
