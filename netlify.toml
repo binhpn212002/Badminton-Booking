@@ -5,6 +5,19 @@
 [build.environment]
   NODE_VERSION = "20"
 
+# Serve TikTok signature when crawler hits the URL prefix folder
+[[redirects]]
+  from = "/tiktok"
+  to = "/tiktok/tiktokvtJe1OICCej7aFQjVbTG7UN3DMy6DZ9T.txt"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/tiktok/"
+  to = "/tiktok/tiktokvtJe1OICCej7aFQjVbTG7UN3DMy6DZ9T.txt"
+  status = 200
+  force = true
+
 # Proxy BE API for browser calls on Netlify static hosting
 [[redirects]]
   from = "/api/be/*"
