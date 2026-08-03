@@ -1,6 +1,7 @@
 import {
   TIKTOK_CLIENT_KEY,
   TIKTOK_REDIRECT_URI,
+  TIKTOK_SCOPES,
 } from "~/utils/tiktok-credentials";
 
 const STATE_KEY = "tiktok_oauth_state";
@@ -17,11 +18,14 @@ export function useTikTokAuth() {
     const state = randomState();
     if (import.meta.client) {
       sessionStorage.setItem(STATE_KEY, state);
+      // Xóa token/session cũ trước khi xin scope mới
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
     }
 
     const params = new URLSearchParams({
       client_key: TIKTOK_CLIENT_KEY,
-      scope: "user.info.basic",
+      scope: TIKTOK_SCOPES,
       response_type: "code",
       redirect_uri: TIKTOK_REDIRECT_URI,
       state,

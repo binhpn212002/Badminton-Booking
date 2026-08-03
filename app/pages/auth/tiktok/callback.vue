@@ -102,7 +102,15 @@ onMounted(async () => {
 
     auth.setSession(res.accessToken, res.user);
     ok.value = true;
-    statusText.value = `OK — ${res.user.displayName}. Xem debug bên dưới.`;
+    const tokenScope =
+      res.debug?.tokenResponse &&
+      typeof res.debug.tokenResponse === "object" &&
+      res.debug.tokenResponse !== null &&
+      "scope" in res.debug.tokenResponse
+        ? String((res.debug.tokenResponse as { scope?: string }).scope || "")
+        : "";
+    debugLogs.value.grantedScope = tokenScope;
+    statusText.value = `OK — ${res.user.displayName}. scope=${tokenScope || "(xem debug)"}`;
     message.success(`Xin chào, ${res.user.displayName}`);
   } catch (e: unknown) {
     const err = e as Error & { debug?: TikTokDebugInfo };
