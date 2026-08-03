@@ -31,7 +31,9 @@ export function useTikTokAuth() {
   }
 
   function startLogin() {
-    window.location.href = getAuthorizeUrl();
+    const url = getAuthorizeUrl();
+    console.log("[TikTok] authorize URL", url);
+    window.location.href = url;
   }
 
   function consumeState(returnedState?: string | null) {
