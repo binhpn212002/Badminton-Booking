@@ -4,12 +4,14 @@ import {
   TIKTOK_CLIENT_SECRET,
   TIKTOK_ENV,
   TIKTOK_REDIRECT_URI,
+  TIKTOK_SCOPES,
 } from "~/utils/tiktok-credentials";
 
 export type TikTokDebugInfo = {
   env: string;
   clientKey: string;
   redirectUri: string;
+  requestedScopes: string;
   code: string;
   tokenRequest: {
     url: string;
@@ -17,9 +19,24 @@ export type TikTokDebugInfo = {
   };
   tokenStatus: number;
   tokenResponse: unknown;
+  grantedScope?: string;
+  missingScopes?: string[];
   userStatus?: number;
   userResponse?: unknown;
 };
+
+function parseScopes(scope: string | undefined): string[] {
+  if (!scope) return [];
+  return scope
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function missingRequiredScopes(granted: string): string[] {
+  const have = new Set(parseScopes(granted));
+  return parseScopes(TIKTOK_SCOPES).filter((s) => !have.has(s));
+}
 
 /** Đổi code → TikTok access_token ngay trên FE (không qua API riêng). */
 export async function loginWithTikTokCode(
@@ -38,6 +55,7 @@ export async function loginWithTikTokCode(
     env: TIKTOK_ENV,
     clientKey: TIKTOK_CLIENT_KEY,
     redirectUri: TIKTOK_REDIRECT_URI,
+    requestedScopes: TIKTOK_SCOPES,
     code,
     tokenRequest: {
       url: tokenUrl,
@@ -52,6 +70,7 @@ export async function loginWithTikTokCode(
 
   console.group("[TikTok] exchange code → token");
   console.log("env", TIKTOK_ENV);
+  console.log("requestedScopes", TIKTOK_SCOPES);
   console.log("request", debug.tokenRequest);
   console.log("code", code);
 
@@ -66,7 +85,10 @@ export async function loginWithTikTokCode(
 
   const tokenJson = (await tokenRes.json().catch(() => ({}))) as {
     access_token?: string;
+    refresh_token?: string;
     open_id?: string;
+    expires_in?: number;
+    scope?: string;
     error?: string;
     error_description?: string;
     [key: string]: unknown;
@@ -74,8 +96,12 @@ export async function loginWithTikTokCode(
 
   debug.tokenStatus = tokenRes.status;
   debug.tokenResponse = tokenJson;
+  debug.grantedScope = tokenJson.scope || "";
+  debug.missingScopes = missingRequiredScopes(tokenJson.scope || "");
   console.log("token status", tokenRes.status);
   console.log("token response", tokenJson);
+  console.log("grantedScope", debug.grantedScope);
+  console.log("missingScopes", debug.missingScopes);
   console.groupEnd();
 
   if (!tokenRes.ok || !tokenJson.access_token) {
@@ -83,6 +109,14 @@ export async function loginWithTikTokCode(
       tokenJson.error_description ||
         tokenJson.error ||
         "TikTok token exchange failed",
+    ) as Error & { debug: TikTokDebugInfo };
+    err.debug = debug;
+    throw err;
+  }
+
+  if (debug.missingScopes.length > 0) {
+    const err = new Error(
+      `Token thiếu scope: ${debug.missingScopes.join(", ")}. Cần: ${TIKTOK_SCOPES}. Hãy login lại với authorize URL mới.`,
     ) as Error & { debug: TikTokDebugInfo };
     err.debug = debug;
     throw err;
@@ -118,11 +152,11 @@ export async function loginWithTikTokCode(
   console.log("user response", userJson);
   console.groupEnd();
 
-  const profile = userJson?.data?.user;
+  const openId = profileOpenId(userJson, tokenJson.open_id);
   const user: AuthUser = {
-    openId: profile?.open_id || tokenJson.open_id || "",
-    displayName: profile?.display_name || "TikTok User",
-    avatarUrl: profile?.avatar_url || "",
+    openId,
+    displayName: userJson?.data?.user?.display_name || "TikTok User",
+    avatarUrl: userJson?.data?.user?.avatar_url || "",
   };
 
   if (!user.openId) {
@@ -135,7 +169,20 @@ export async function loginWithTikTokCode(
 
   return {
     accessToken: tokenJson.access_token,
+    refreshToken: tokenJson.refresh_token,
+    openId,
+    expiresIn: Number(tokenJson.expires_in || 0),
+    scope: tokenJson.scope || "",
     user,
     debug,
   };
+}
+
+function profileOpenId(
+  userJson: {
+    data?: { user?: { open_id?: string } };
+  },
+  fallback?: string,
+) {
+  return userJson?.data?.user?.open_id || fallback || "";
 }

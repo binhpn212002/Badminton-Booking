@@ -100,17 +100,16 @@ onMounted(async () => {
     debugLogs.value.resultUser = res.user;
     debugLogs.value.accessTokenPreview = `${res.accessToken.slice(0, 24)}…`;
 
-    auth.setSession(res.accessToken, res.user);
+    auth.setSession(res.accessToken, res.user, {
+      scope: res.scope,
+      openId: res.openId,
+      expiresIn: res.expiresIn,
+    });
     ok.value = true;
-    const tokenScope =
-      res.debug?.tokenResponse &&
-      typeof res.debug.tokenResponse === "object" &&
-      res.debug.tokenResponse !== null &&
-      "scope" in res.debug.tokenResponse
-        ? String((res.debug.tokenResponse as { scope?: string }).scope || "")
-        : "";
-    debugLogs.value.grantedScope = tokenScope;
-    statusText.value = `OK — ${res.user.displayName}. scope=${tokenScope || "(xem debug)"}`;
+    debugLogs.value.grantedScope = res.scope;
+    debugLogs.value.openId = res.openId;
+    debugLogs.value.expiresIn = res.expiresIn;
+    statusText.value = `OK — ${res.user.displayName}. scope=${res.scope}`;
     message.success(`Xin chào, ${res.user.displayName}`);
   } catch (e: unknown) {
     const err = e as Error & { debug?: TikTokDebugInfo };

@@ -21,6 +21,9 @@ export function useTikTokAuth() {
       // Xóa token/session cũ trước khi xin scope mới
       localStorage.removeItem("token");
       localStorage.removeItem("user");
+      localStorage.removeItem("tiktok_scope");
+      localStorage.removeItem("tiktok_open_id");
+      localStorage.removeItem("tiktok_expires_in");
     }
 
     const params = new URLSearchParams({
