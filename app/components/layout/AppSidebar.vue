@@ -85,6 +85,7 @@ const items: MenuProps["items"] = [
       { key: "/dashboard/settings/zalo-oa", label: "Cấu hình ZaloOA" },
       { key: "/dashboard/settings/vnpay", label: "Cấu hình VNPay" },
       { key: "/dashboard/settings/google", label: "Cấu hình Google" },
+      { key: "/dashboard/settings/tiktok", label: "Cấu hình TikTok" },
     ],
   },
 ];

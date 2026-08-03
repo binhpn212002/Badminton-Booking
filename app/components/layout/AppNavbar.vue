@@ -4,6 +4,11 @@ import type { MenuProps } from "ant-design-vue";
 const loginOpen = ref(false);
 const route = useRoute();
 const router = useRouter();
+const auth = useAuthStore();
+
+onMounted(() => {
+  auth.hydrate();
+});
 
 const selectedKeys = computed(() => {
   if (route.path.startsWith("/booking")) return ["booking"];
@@ -27,6 +32,10 @@ const onClick: MenuProps["onClick"] = ({ key }) => {
   const path = pathByKey[String(key)];
   if (path) router.push(path);
 };
+
+function handleLogout() {
+  auth.logout();
+}
 </script>
 
 <template>
@@ -43,10 +52,24 @@ const onClick: MenuProps["onClick"] = ({ key }) => {
       @click="onClick"
     />
 
-    <a-button type="primary" class="shrink-0" @click="loginOpen = true"
-      >Login</a-button
-    >
-    <CommonLoginModal v-model:open="loginOpen" />
+    <div v-if="auth.isLoggedIn" class="user-chip shrink-0">
+      <a-avatar
+        v-if="auth.user?.avatarUrl"
+        :src="auth.user.avatarUrl"
+        :size="32"
+      />
+      <a-avatar v-else :size="32">
+        {{ auth.user?.displayName?.charAt(0) || "U" }}
+      </a-avatar>
+      <span class="user-name">{{ auth.user?.displayName }}</span>
+      <a-button type="link" class="!px-0" @click="handleLogout">Logout</a-button>
+    </div>
+    <template v-else>
+      <a-button type="primary" class="shrink-0" @click="loginOpen = true">
+        Login
+      </a-button>
+      <CommonLoginModal v-model:open="loginOpen" />
+    </template>
   </a-layout-header>
 </template>
 
@@ -67,5 +90,21 @@ const onClick: MenuProps["onClick"] = ({ key }) => {
 .app-menu {
   background: transparent;
   line-height: 62px;
+}
+
+.user-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  line-height: 1.2;
+}
+
+.user-name {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #374151;
+  font-size: 0.9rem;
 }
 </style>

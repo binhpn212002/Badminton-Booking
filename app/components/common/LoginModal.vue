@@ -1,8 +1,12 @@
 <script setup lang="ts">
+import { message } from "ant-design-vue";
+
 const open = defineModel<boolean>("open", { default: false });
 
 const email = ref("");
 const password = ref("");
+const tiktokLoading = ref(false);
+const { startLogin } = useTikTokAuth();
 
 function handleSubmit() {
   open.value = false;
@@ -12,6 +16,18 @@ function handleSubmit() {
 
 function handleCancel() {
   open.value = false;
+}
+
+function handleTikTokLogin() {
+  try {
+    tiktokLoading.value = true;
+    startLogin();
+  } catch (e: unknown) {
+    tiktokLoading.value = false;
+    message.error(
+      e instanceof Error ? e.message : "Không thể bắt đầu đăng nhập TikTok",
+    );
+  }
 }
 </script>
 
@@ -42,12 +58,32 @@ function handleCancel() {
       >
         <a-input-password v-model:value="password" placeholder="••••••••" />
       </a-form-item>
-      <a-form-item class="!mb-0">
+      <a-form-item class="!mb-2">
         <div class="flex justify-end gap-2">
           <a-button @click="handleCancel">Hủy</a-button>
           <a-button type="primary" html-type="submit">Đăng nhập</a-button>
         </div>
       </a-form-item>
     </a-form>
+
+    <a-divider plain>hoặc</a-divider>
+
+    <a-button
+      block
+      size="large"
+      :loading="tiktokLoading"
+      class="tiktok-btn"
+      @click="handleTikTokLogin"
+    >
+      Đăng nhập bằng TikTok
+    </a-button>
   </a-modal>
 </template>
+
+<style scoped>
+.tiktok-btn {
+  background: #010101 !important;
+  border-color: #010101 !important;
+  color: #fff !important;
+}
+</style>

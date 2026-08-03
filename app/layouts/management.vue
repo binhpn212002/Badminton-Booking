@@ -22,6 +22,7 @@ const titles: Record<string, string> = {
   '/dashboard/settings/zalo-oa': 'Cấu hình ZaloOA',
   '/dashboard/settings/vnpay': 'Cấu hình VNPay',
   '/dashboard/settings/google': 'Cấu hình Google',
+  '/dashboard/settings/tiktok': 'Cấu hình TikTok',
 }
 
 const pageTitle = computed(() => {
