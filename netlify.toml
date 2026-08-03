@@ -18,19 +18,6 @@
   status = 200
   force = true
 
-# Serve TikTok signature when crawler hits the URL prefix folder
-[[redirects]]
-  from = "/tiktok"
-  to = "/tiktok/tiktokwzaaA1GVpEl5D4fr6AHom0gGb3OZv7Cr.txt"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/tiktok/"
-  to = "/tiktok/tiktokwzaaA1GVpEl5D4fr6AHom0gGb3OZv7Cr.txt"
-  status = 200
-  force = true
-
 # Proxy BE API for browser calls on Netlify static hosting
 [[redirects]]
   from = "/api/be/*"
