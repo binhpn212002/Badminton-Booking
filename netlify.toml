@@ -8,13 +8,13 @@
 # Serve TikTok signature when crawler hits the URL prefix folder
 [[redirects]]
   from = "/tiktok"
-  to = "/tiktok/tiktokHlHGaGmnnnw3wddCo0dAcnJ4nt3vDBWH.txt"
+  to = "/tiktok/tiktokwzaaA1GVpEl5D4fr6AHom0gGb3OZv7Cr.txt"
   status = 200
   force = true
 
 [[redirects]]
   from = "/tiktok/"
-  to = "/tiktok/tiktokHlHGaGmnnnw3wddCo0dAcnJ4nt3vDBWH.txt"
+  to = "/tiktok/tiktokwzaaA1GVpEl5D4fr6AHom0gGb3OZv7Cr.txt"
   status = 200
   force = true
 
