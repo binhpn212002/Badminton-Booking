@@ -466,6 +466,7 @@ function voucherLabel(v: MockVoucher) {
       :title="checkoutStep === 'done' ? 'Đặt sân thành công' : 'Đặt sân'"
       :footer="null"
       :width="560"
+      :body-style="{ paddingTop: '12px', maxHeight: '70vh', overflowY: 'auto' }"
       destroy-on-close
       @cancel="closeCheckout"
     >
@@ -952,7 +953,12 @@ function voucherLabel(v: MockVoucher) {
 }
 
 .checkout-steps {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   margin-bottom: 1.25rem;
+  padding-bottom: 0.5rem;
+  background: #fff;
 }
 
 .checkout-pane h3 {
