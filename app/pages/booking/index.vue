@@ -4,16 +4,43 @@ import { formatCurrency } from '~/utils/format'
 
 definePageMeta({ layout: 'booking' })
 
+const PAGE_SIZE = 10
 const courtStore = useCourtStore()
-await courtStore.loadCourts().catch(() => undefined)
+await courtStore.loadCourts(true, { page: 1, limit: PAGE_SIZE }).catch(() => undefined)
 
 const keyword = ref('')
 const address = ref<string | 'all'>('all')
 const capacity = ref<number | 'all'>('all')
-const priceRange = ref<[number, number]>([0, 200000])
 const indoorOnly = ref(false)
+const loadMoreSentinel = ref<HTMLElement | null>(null)
 
-const courts = computed(() => courtStore.courts.filter((c) => c.status === 'ACTIVE'))
+const FALLBACK_COVER =
+  'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=900&q=80'
+
+const courts = computed(() =>
+  courtStore.courts.filter((c) => c.status === 'ACTIVE' && c.isAvailable),
+)
+
+const priceFrom = (court: Court) =>
+  court.priceSlots.length ? Math.min(...court.priceSlots.map((s) => s.price)) : 0
+
+const maxPrice = computed(() => {
+  const prices = courts.value.map(priceFrom)
+  const peak = prices.length ? Math.max(...prices) : 200000
+  return Math.max(200000, Math.ceil(peak / 10000) * 10000)
+})
+
+const priceRange = ref<[number, number]>([0, 200000])
+
+watch(
+  maxPrice,
+  (value) => {
+    if (priceRange.value[1] < value) {
+      priceRange.value = [priceRange.value[0], value]
+    }
+  },
+  { immediate: true },
+)
 
 const addressOptions = computed(() => {
   const locations = [...new Set(courts.value.map((c) => c.location).filter(Boolean))] as string[]
@@ -29,12 +56,10 @@ const capacityOptions = [
   { value: 4, label: '4 người' },
 ]
 
-const priceFrom = (court: Court) =>
-  court.priceSlots.length ? Math.min(...court.priceSlots.map((s) => s.price)) : 0
-
-const coverOf = (court: Court) =>
-  court.image ||
-  'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=900&q=80'
+const coverOf = (court: Court) => {
+  if (court.image && /^https?:\/\//i.test(court.image)) return court.image
+  return FALLBACK_COVER
+}
 
 const filteredCourts = computed(() => {
   const q = keyword.value.trim().toLowerCase()
@@ -57,9 +82,64 @@ function resetFilters() {
   keyword.value = ''
   address.value = 'all'
   capacity.value = 'all'
-  priceRange.value = [0, 200000]
+  priceRange.value = [0, maxPrice.value]
   indoorOnly.value = false
 }
+
+function isSentinelVisible() {
+  const el = loadMoreSentinel.value
+  if (!el) return false
+  const rect = el.getBoundingClientRect()
+  return rect.top < window.innerHeight + 240
+}
+
+async function ensureFilled() {
+  await nextTick()
+  while (courtStore.hasMore && !courtStore.loading && !courtStore.loadingMore) {
+    if (!isSentinelVisible()) break
+    const before = courtStore.courts.length
+    await courtStore.loadMoreCourts().catch(() => undefined)
+    await nextTick()
+    if (courtStore.courts.length <= before) break
+  }
+}
+
+async function reloadCourts() {
+  await courtStore.loadCourts(true, { page: 1, limit: PAGE_SIZE }).catch(() => undefined)
+  await ensureFilled()
+}
+
+async function onLoadMore() {
+  if (!courtStore.hasMore || courtStore.loading || courtStore.loadingMore) return
+  await courtStore.loadMoreCourts().catch(() => undefined)
+  await ensureFilled()
+}
+
+let observer: IntersectionObserver | null = null
+
+onMounted(async () => {
+  observer = new IntersectionObserver(
+    (entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) {
+        void onLoadMore()
+      }
+    },
+    { root: null, rootMargin: '240px 0px', threshold: 0 },
+  )
+  if (loadMoreSentinel.value) observer.observe(loadMoreSentinel.value)
+  await ensureFilled()
+})
+
+watch(loadMoreSentinel, (el, prev) => {
+  if (!observer) return
+  if (prev) observer.unobserve(prev)
+  if (el) observer.observe(el)
+})
+
+onBeforeUnmount(() => {
+  observer?.disconnect()
+  observer = null
+})
 </script>
 
 <template>
@@ -86,21 +166,30 @@ function resetFilters() {
           <div class="filter-label">
             Giá từ {{ formatCurrency(priceRange[0]) }} – {{ formatCurrency(priceRange[1]) }}
           </div>
-          <a-slider v-model:value="priceRange" range :min="0" :max="200000" :step="10000" />
+          <a-slider
+            v-model:value="priceRange"
+            range
+            :min="0"
+            :max="maxPrice"
+            :step="10000"
+          />
         </div>
         <label class="indoor-row">
           <a-switch v-model:checked="indoorOnly" size="small" />
           <span>Chỉ sân trong nhà</span>
         </label>
         <a-button block @click="resetFilters">Đặt lại</a-button>
-        <a-button block :loading="courtStore.loading" @click="courtStore.loadCourts(true)">
-          Tải lại từ API
+        <a-button block :loading="courtStore.loading" @click="reloadCourts">
+          Tải lại
         </a-button>
       </aside>
 
       <section class="results">
         <div class="results-head">
-          <h2>{{ filteredCourts.length }} sân phù hợp</h2>
+          <h2>
+            {{ filteredCourts.length }} sân đang hiển thị
+            <span class="results-total">/ {{ courtStore.total }} tổng</span>
+          </h2>
         </div>
 
         <a-alert
@@ -111,7 +200,7 @@ function resetFilters() {
           :message="courtStore.error"
         />
 
-        <a-spin :spinning="courtStore.loading">
+        <a-spin :spinning="courtStore.loading && !courtStore.loadingMore">
           <div v-if="filteredCourts.length" class="court-list">
             <article v-for="court in filteredCourts" :key="court.id" class="court-card">
               <div
@@ -142,8 +231,18 @@ function resetFilters() {
             </article>
           </div>
 
-          <a-empty v-else description="Không tìm thấy sân phù hợp" />
+          <a-empty v-else-if="!courtStore.loading" description="Không tìm thấy sân phù hợp" />
         </a-spin>
+
+        <div ref="loadMoreSentinel" class="load-more-sentinel" aria-hidden="true" />
+
+        <div v-if="courtStore.loadingMore" class="load-more-status">
+          <a-spin size="small" />
+          <span>Đang tải thêm sân...</span>
+        </div>
+        <p v-else-if="!courtStore.hasMore && courts.length" class="load-more-status done">
+          Đã hết danh sách sân
+        </p>
       </section>
     </div>
   </div>
@@ -232,6 +331,31 @@ function resetFilters() {
 .results-head h2 {
   margin: 0 0 1rem;
   font-size: 1.15rem;
+}
+
+.results-total {
+  font-weight: 500;
+  color: #6a7f72;
+  font-size: 0.95rem;
+}
+
+.load-more-sentinel {
+  height: 1px;
+  width: 100%;
+}
+
+.load-more-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  color: #4d6557;
+  font-size: 0.9rem;
+}
+
+.load-more-status.done {
+  color: #8a9b90;
 }
 
 .court-list {

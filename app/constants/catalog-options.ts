@@ -26,6 +26,12 @@ export const VOUCHER_STATUS_OPTIONS = [
   { value: 'draft', label: 'Nháp' },
 ]
 
+export const ACTIVITY_STATUS_OPTIONS = [
+  { value: 'active', label: 'Hoạt động' },
+  { value: 'inactive', label: 'Ngưng' },
+  { value: 'draft', label: 'Nháp' },
+]
+
 export function optionLabel(
   options: Array<{ value: string; label: string }>,
   value: string,

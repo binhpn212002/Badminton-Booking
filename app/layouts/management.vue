@@ -35,6 +35,10 @@ const pageTitle = computed(() => {
   if (/^\/dashboard\/fnb\/[^/]+\/edit$/.test(route.path)) return 'Cập nhật món'
   if (route.path === '/dashboard/vouchers/create') return 'Thêm voucher'
   if (/^\/dashboard\/vouchers\/[^/]+\/edit$/.test(route.path)) return 'Cập nhật voucher'
+  if (route.path === '/dashboard/settings/activities/create') return 'Thêm hoạt động'
+  if (/^\/dashboard\/settings\/activities\/[^/]+\/edit$/.test(route.path)) {
+    return 'Cập nhật hoạt động'
+  }
   return titles[route.path] ?? 'Quản lý'
 })
 </script>

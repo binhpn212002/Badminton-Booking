@@ -1,16 +1,98 @@
 <script setup lang="ts">
-import { bookingActivities, bookingBanners, bookingOffers } from '~/utils/mock-booking'
+import { formatCurrency, formatDate } from '~/utils/format'
+import type { Voucher } from '~/types/management'
 
 definePageMeta({ layout: 'booking' })
 
+const bannerStore = useBannerStore()
+const activityStore = useActivityStore()
+const voucherStore = useVoucherStore()
+
+await Promise.all([
+  bannerStore.loadBanners(true, { page: 1, limit: 20 }).catch(() => undefined),
+  activityStore.loadActivities(true, { page: 1, limit: 20 }).catch(() => undefined),
+  voucherStore.loadVouchers(true, { page: 1, limit: 20 }).catch(() => undefined),
+])
+
+const FALLBACK_BANNER_IMAGE =
+  'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=1800&q=80'
+const FALLBACK_ACTIVITY_IMAGE =
+  'https://images.unsplash.com/photo-1554068865-24cecd4e343f?auto=format&fit=crop&w=900&q=80'
+
 const activeBanner = ref(0)
-const banners = bookingBanners
+
+const banners = computed(() =>
+  bannerStore.banners
+    .filter((item) => item.status === 'active')
+    .map((item) => ({
+      id: item.id,
+      title: item.title,
+      subtitle: 'Đặt sân, ưu đãi và sự kiện cập nhật mỗi ngày.',
+      image: item.image || FALLBACK_BANNER_IMAGE,
+      cta: item.link.includes('booking') ? 'Đặt sân ngay' : 'Xem ngay',
+      to: item.link || '/booking',
+    })),
+)
+
+const activities = computed(() =>
+  activityStore.activities
+    .filter((item) => item.status === 'active')
+    .map((item) => ({
+      id: item.id,
+      title: item.title,
+      date: formatDate(item.startAt),
+      place: `${formatDate(item.startAt)} – ${formatDate(item.endAt)}`,
+      image: FALLBACK_ACTIVITY_IMAGE,
+      summary: 'Sự kiện đang diễn ra tại hệ thống sân.',
+    })),
+)
+
+function offerTitle(voucher: Voucher) {
+  if (voucher.type === 'percent') return `Giảm ${voucher.value}%`
+  return `Giảm ${formatCurrency(voucher.value)}`
+}
+
+function offerDescription(voucher: Voucher) {
+  if (voucher.minOrder > 0) {
+    return `Áp dụng cho đơn từ ${formatCurrency(voucher.minOrder)}.`
+  }
+  return 'Áp dụng cho mọi đơn đặt sân.'
+}
+
+function offerTag(voucher: Voucher) {
+  if (voucher.type === 'percent') return 'Ưu đãi'
+  return 'Hot'
+}
+
+const offers = computed(() =>
+  voucherStore.vouchers
+    .filter((item) => item.status === 'active')
+    .map((item) => ({
+      id: item.id,
+      code: item.code,
+      title: offerTitle(item),
+      description: offerDescription(item),
+      tag: offerTag(item),
+    })),
+)
+
+const loading = computed(
+  () => bannerStore.loading || activityStore.loading || voucherStore.loading,
+)
 
 let timer: ReturnType<typeof setInterval> | null = null
 
+watch(
+  () => banners.value.length,
+  (length) => {
+    if (activeBanner.value >= length) activeBanner.value = 0
+  },
+)
+
 onMounted(() => {
   timer = setInterval(() => {
-    activeBanner.value = (activeBanner.value + 1) % banners.length
+    if (!banners.value.length) return
+    activeBanner.value = (activeBanner.value + 1) % banners.value.length
   }, 5000)
 })
 
@@ -25,73 +107,96 @@ function goBanner(index: number) {
 
 <template>
   <div class="home-page">
-    <section class="hero">
-      <div
-        v-for="(banner, index) in banners"
-        :key="banner.id"
-        class="hero-slide"
-        :class="{ active: index === activeBanner }"
-        :style="{ backgroundImage: `url(${banner.image})` }"
-      >
-        <div class="hero-overlay" />
-        <div class="hero-inner">
-          <p class="brand-mark">Badminton Booking</p>
-          <h1>{{ banner.title }}</h1>
-          <p class="hero-sub">{{ banner.subtitle }}</p>
-          <div class="hero-actions">
-            <NuxtLink :to="banner.to">
-              <a-button type="primary" size="large">{{ banner.cta }}</a-button>
-            </NuxtLink>
-            <NuxtLink to="/shop">
-              <a-button size="large" ghost class="!border-white !text-white">Mua sắm</a-button>
-            </NuxtLink>
+    <a-spin :spinning="loading">
+      <section class="hero">
+        <template v-if="banners.length">
+          <div
+            v-for="(banner, index) in banners"
+            :key="banner.id"
+            class="hero-slide"
+            :class="{ active: index === activeBanner }"
+            :style="{ backgroundImage: `url(${banner.image})` }"
+          >
+            <div class="hero-overlay" />
+            <div class="hero-inner">
+              <p class="brand-mark">Badminton Booking</p>
+              <h1>{{ banner.title }}</h1>
+              <p class="hero-sub">{{ banner.subtitle }}</p>
+              <div class="hero-actions">
+                <NuxtLink :to="banner.to">
+                  <a-button type="primary" size="large">{{ banner.cta }}</a-button>
+                </NuxtLink>
+                <NuxtLink to="/shop">
+                  <a-button size="large" ghost class="!border-white !text-white">Mua sắm</a-button>
+                </NuxtLink>
+              </div>
+            </div>
+          </div>
+
+          <div class="hero-dots">
+            <button
+              v-for="(banner, index) in banners"
+              :key="banner.id"
+              type="button"
+              :class="{ active: index === activeBanner }"
+              :aria-label="`Banner ${index + 1}`"
+              @click="goBanner(index)"
+            />
+          </div>
+        </template>
+
+        <div v-else class="hero-slide active" :style="{ backgroundImage: `url(${FALLBACK_BANNER_IMAGE})` }">
+          <div class="hero-overlay" />
+          <div class="hero-inner">
+            <p class="brand-mark">Badminton Booking</p>
+            <h1>Đặt sân cầu lông dễ dàng</h1>
+            <p class="hero-sub">Chọn khung giờ phù hợp và giữ chỗ ngay.</p>
+            <div class="hero-actions">
+              <NuxtLink to="/booking">
+                <a-button type="primary" size="large">Đặt sân ngay</a-button>
+              </NuxtLink>
+              <NuxtLink to="/shop">
+                <a-button size="large" ghost class="!border-white !text-white">Mua sắm</a-button>
+              </NuxtLink>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div class="hero-dots">
-        <button
-          v-for="(banner, index) in banners"
-          :key="banner.id"
-          type="button"
-          :class="{ active: index === activeBanner }"
-          :aria-label="`Banner ${index + 1}`"
-          @click="goBanner(index)"
-        />
-      </div>
-    </section>
+      <section class="section">
+        <div class="section-head">
+          <h2>Hoạt động</h2>
+          <p>Sự kiện và chương trình đang diễn ra tại các chi nhánh.</p>
+        </div>
+        <div v-if="activities.length" class="activity-grid">
+          <article v-for="item in activities" :key="item.id" class="activity-item">
+            <div class="activity-image" :style="{ backgroundImage: `url(${item.image})` }" />
+            <div class="activity-body">
+              <span class="meta">{{ item.date }} · {{ item.place }}</span>
+              <h3>{{ item.title }}</h3>
+              <p>{{ item.summary }}</p>
+            </div>
+          </article>
+        </div>
+        <a-empty v-else description="Chưa có hoạt động đang diễn ra" />
+      </section>
 
-    <section class="section">
-      <div class="section-head">
-        <h2>Hoạt động</h2>
-        <p>Sự kiện và chương trình đang diễn ra tại các chi nhánh.</p>
-      </div>
-      <div class="activity-grid">
-        <article v-for="item in bookingActivities" :key="item.id" class="activity-item">
-          <div class="activity-image" :style="{ backgroundImage: `url(${item.image})` }" />
-          <div class="activity-body">
-            <span class="meta">{{ item.date }} · {{ item.place }}</span>
-            <h3>{{ item.title }}</h3>
-            <p>{{ item.summary }}</p>
-          </div>
-        </article>
-      </div>
-    </section>
-
-    <section id="offers" class="section offers">
-      <div class="section-head">
-        <h2>Ưu đãi</h2>
-        <p>Mã giảm giá và combo dành cho người chơi thường xuyên.</p>
-      </div>
-      <div class="offer-grid">
-        <article v-for="offer in bookingOffers" :key="offer.id" class="offer-item">
-          <span class="offer-tag">{{ offer.tag }}</span>
-          <h3>{{ offer.title }}</h3>
-          <p>{{ offer.description }}</p>
-          <code>{{ offer.code }}</code>
-        </article>
-      </div>
-    </section>
+      <section id="offers" class="section offers">
+        <div class="section-head">
+          <h2>Ưu đãi</h2>
+          <p>Mã giảm giá và combo dành cho người chơi thường xuyên.</p>
+        </div>
+        <div v-if="offers.length" class="offer-grid">
+          <article v-for="offer in offers" :key="offer.id" class="offer-item">
+            <span class="offer-tag">{{ offer.tag }}</span>
+            <h3>{{ offer.title }}</h3>
+            <p>{{ offer.description }}</p>
+            <code>{{ offer.code }}</code>
+          </article>
+        </div>
+        <a-empty v-else description="Chưa có ưu đãi đang áp dụng" />
+      </section>
+    </a-spin>
   </div>
 </template>
 

@@ -1,5 +1,4 @@
 import type {
-  Activity,
   BankAccount,
   Banner,
   Booking,
@@ -285,23 +284,6 @@ export const mockBanners: Banner[] = [
     link: "/",
     sort: 3,
     status: "inactive",
-  },
-];
-
-export const mockActivities: Activity[] = [
-  {
-    id: "1",
-    title: "Giải giao hữu nội bộ",
-    startAt: "2026-08-05T08:00:00",
-    endAt: "2026-08-05T18:00:00",
-    status: "active",
-  },
-  {
-    id: "2",
-    title: "Workshop kỹ thuật",
-    startAt: "2026-08-12T19:00:00",
-    endAt: "2026-08-12T21:00:00",
-    status: "draft",
   },
 ];
 
