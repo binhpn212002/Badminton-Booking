@@ -35,7 +35,7 @@ export type Court = {
   createdAt: string
 }
 
-export type Equipment = {
+export type Device = {
   id: string
   name: string
   sku: string

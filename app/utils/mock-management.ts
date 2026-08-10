@@ -4,12 +4,9 @@ import type {
   Banner,
   Booking,
   Court,
-  Equipment,
-  FnbItem,
   Order,
   ReportRow,
   User,
-  Voucher,
 } from "~/types/management";
 
 export const mockBranches = [
@@ -145,69 +142,6 @@ export const mockCourts: Court[] = [
   },
 ];
 
-export const mockEquipment: Equipment[] = [
-  {
-    id: "1",
-    name: "Vợt Yonex Astrox",
-    sku: "EQ-001",
-    category: "Vợt",
-    stock: 12,
-    price: 2500000,
-    status: "active",
-    updatedAt: "2026-07-20T10:00:00",
-  },
-  {
-    id: "2",
-    name: "Ống cầu Li-Ning",
-    sku: "EQ-002",
-    category: "Cầu",
-    stock: 40,
-    price: 180000,
-    status: "active",
-    updatedAt: "2026-07-22T10:00:00",
-  },
-  {
-    id: "3",
-    name: "Giày cầu lông A",
-    sku: "EQ-003",
-    category: "Giày",
-    stock: 0,
-    price: 1200000,
-    status: "inactive",
-    updatedAt: "2026-07-18T10:00:00",
-  },
-];
-
-export const mockFnb: FnbItem[] = [
-  {
-    id: "1",
-    name: "Nước suối",
-    category: "Đồ uống",
-    price: 10000,
-    stock: 100,
-    status: "active",
-    updatedAt: "2026-07-25T09:00:00",
-  },
-  {
-    id: "2",
-    name: "Sting",
-    category: "Đồ uống",
-    price: 15000,
-    stock: 50,
-    status: "active",
-    updatedAt: "2026-07-25T09:00:00",
-  },
-  {
-    id: "3",
-    name: "Mì ly",
-    category: "Đồ ăn",
-    price: 20000,
-    stock: 30,
-    status: "active",
-    updatedAt: "2026-07-24T09:00:00",
-  },
-];
-
 export const mockBookings: Booking[] = [
   {
     id: "1",
@@ -324,45 +258,6 @@ export const mockUsers: User[] = [
     role: "customer",
     status: "inactive",
     createdAt: "2026-06-01T08:00:00",
-  },
-];
-
-export const mockVouchers: Voucher[] = [
-  {
-    id: "1",
-    code: "WELCOME10",
-    type: "percent",
-    value: 10,
-    minOrder: 100000,
-    usageLimit: 100,
-    usedCount: 23,
-    startAt: "2026-07-01",
-    endAt: "2026-08-31",
-    status: "active",
-  },
-  {
-    id: "2",
-    code: "FIXED50K",
-    type: "fixed",
-    value: 50000,
-    minOrder: 200000,
-    usageLimit: 50,
-    usedCount: 50,
-    startAt: "2026-06-01",
-    endAt: "2026-07-15",
-    status: "inactive",
-  },
-  {
-    id: "3",
-    code: "DRAFT20",
-    type: "percent",
-    value: 20,
-    minOrder: 0,
-    usageLimit: 20,
-    usedCount: 0,
-    startAt: "2026-08-01",
-    endAt: "2026-08-31",
-    status: "draft",
   },
 ];
 

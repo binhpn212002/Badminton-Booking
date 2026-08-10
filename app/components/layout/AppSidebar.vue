@@ -31,7 +31,7 @@ const items: MenuProps["items"] = [
     label: "Sân",
   },
   {
-    key: "/dashboard/equipment",
+    key: "/dashboard/devices",
     icon: () => h(Icon, { icon: "mdi:tennis-ball", width: 18 }),
     label: "Thiết bị",
   },

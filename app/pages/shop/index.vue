@@ -1,53 +1,86 @@
 <script setup lang="ts">
-import { mockEquipment, mockFnb } from '~/utils/mock-management'
+import {
+  DEVICE_CATEGORY_OPTIONS,
+  FOOD_CATEGORY_OPTIONS,
+  optionLabel,
+} from '~/constants/catalog-options'
 import { formatCurrency } from '~/utils/format'
 
 definePageMeta({ layout: 'booking' })
+
+const foodStore = useFoodStore()
+const deviceStore = useDeviceStore()
+
+await Promise.all([
+  foodStore.loadFoods(true, { page: 1, limit: 100 }).catch(() => undefined),
+  deviceStore.loadDevices(true, { page: 1, limit: 100 }).catch(() => undefined),
+])
 
 const tab = ref('fnb')
 const keyword = ref('')
 
 const fnbItems = computed(() => {
   const q = keyword.value.trim().toLowerCase()
-  return mockFnb
-    .filter((item) => item.status === 'active')
-    .filter(
-      (item) =>
-        !q ||
-        item.name.toLowerCase().includes(q) ||
-        item.category.toLowerCase().includes(q),
-    )
-})
-
-const equipmentItems = computed(() => {
-  const q = keyword.value.trim().toLowerCase()
-  return mockEquipment
+  return foodStore.foods
     .filter((item) => item.status === 'active')
     .filter(
       (item) =>
         !q ||
         item.name.toLowerCase().includes(q) ||
         item.category.toLowerCase().includes(q) ||
+        optionLabel(FOOD_CATEGORY_OPTIONS, item.category).toLowerCase().includes(q),
+    )
+})
+
+const deviceItems = computed(() => {
+  const q = keyword.value.trim().toLowerCase()
+  return deviceStore.devices
+    .filter((item) => item.status === 'active')
+    .filter(
+      (item) =>
+        !q ||
+        item.name.toLowerCase().includes(q) ||
+        item.category.toLowerCase().includes(q) ||
+        optionLabel(DEVICE_CATEGORY_OPTIONS, item.category).toLowerCase().includes(q) ||
         item.sku.toLowerCase().includes(q),
     )
 })
 
+const DEFAULT_FNB_IMAGE =
+  'https://images.unsplash.com/photo-1548839140-29a749e1cf4d?auto=format&fit=crop&w=800&q=80'
+const DEFAULT_DEVICE_IMAGE =
+  'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=800&q=80'
+
 const fnbImages: Record<string, string> = {
-  'Nước suối':
-    'https://images.unsplash.com/photo-1548839140-29a749e1cf4d?auto=format&fit=crop&w=800&q=80',
+  'Nước suối': DEFAULT_FNB_IMAGE,
   Sting:
     'https://images.unsplash.com/photo-1622543925917-763c34f1f321?auto=format&fit=crop&w=800&q=80',
   'Mì ly':
     'https://images.unsplash.com/photo-1569718212165-3a8278d5f264?auto=format&fit=crop&w=800&q=80',
+  'Bánh mì':
+    'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=800&q=80',
+  'Trà đá':
+    'https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=800&q=80',
 }
 
-const equipmentImages: Record<string, string> = {
-  'Vợt Yonex Astrox':
+const deviceImages: Record<string, string> = {
+  'Vợt Yonex Astrox 99': DEFAULT_DEVICE_IMAGE,
+  'Vợt Li-Ning Aeronaut 9000':
     'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=800&q=80',
-  'Ống cầu Li-Ning':
-    'https://images.unsplash.com/photo-1613918431703-aa50481936b0?auto=format&fit=crop&w=800&q=80',
-  'Giày cầu lông A':
+  'Giày Yonex Power Cushion':
     'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80',
+  'Quả cầu AS-50':
+    'https://images.unsplash.com/photo-1613918431703-aa50481936b0?auto=format&fit=crop&w=800&q=80',
+  'Quấn cán vợt':
+    'https://images.unsplash.com/photo-1613918431703-aa50481936b0?auto=format&fit=crop&w=800&q=80',
+}
+
+function foodCover(name: string) {
+  return fnbImages[name] ?? DEFAULT_FNB_IMAGE
+}
+
+function deviceCover(name: string) {
+  return deviceImages[name] ?? DEFAULT_DEVICE_IMAGE
 }
 </script>
 
@@ -69,8 +102,8 @@ const equipmentImages: Record<string, string> = {
           </button>
           <button
             type="button"
-            :class="{ active: tab === 'equipment' }"
-            @click="tab = 'equipment'"
+            :class="{ active: tab === 'device' }"
+            @click="tab = 'device'" 
           >
             Thiết bị
           </button>
@@ -83,47 +116,53 @@ const equipmentImages: Record<string, string> = {
         />
       </div>
 
-      <div v-if="tab === 'fnb'" class="product-grid">
-        <article v-for="item in fnbItems" :key="item.id" class="product-card">
-          <div
-            class="product-cover"
-            :style="{
-              backgroundImage: `url(${fnbImages[item.name] ?? fnbImages['Nước suối']})`,
-            }"
-          />
-          <div class="product-body">
-            <span class="cat">{{ item.category }}</span>
-            <h3>{{ item.name }}</h3>
-            <div class="row">
-              <strong>{{ formatCurrency(item.price) }}</strong>
-              <span>Còn {{ item.stock }}</span>
-            </div>
-            <a-button type="primary" block>Thêm vào giỏ</a-button>
-          </div>
-        </article>
-        <a-empty v-if="!fnbItems.length" class="col-span-full" />
-      </div>
+      <a-alert
+        v-if="foodStore.error || deviceStore.error"
+        class="mb-4"
+        type="error"
+        show-icon
+        :message="foodStore.error || deviceStore.error"
+      />
 
-      <div v-else class="product-grid">
-        <article v-for="item in equipmentItems" :key="item.id" class="product-card">
-          <div
-            class="product-cover"
-            :style="{
-              backgroundImage: `url(${equipmentImages[item.name] ?? equipmentImages['Vợt Yonex Astrox']})`,
-            }"
-          />
-          <div class="product-body">
-            <span class="cat">{{ item.category }} · {{ item.sku }}</span>
-            <h3>{{ item.name }}</h3>
-            <div class="row">
-              <strong>{{ formatCurrency(item.price) }}</strong>
-              <span>Còn {{ item.stock }}</span>
+      <a-spin :spinning="foodStore.loading || deviceStore.loading">
+        <div v-if="tab === 'fnb'" class="product-grid">
+          <article v-for="item in fnbItems" :key="item.id" class="product-card">
+            <div
+              class="product-cover"
+              :style="{ backgroundImage: `url(${foodCover(item.name)})` }"
+            />
+            <div class="product-body">
+              <span class="cat">{{ optionLabel(FOOD_CATEGORY_OPTIONS, item.category) }}</span>
+              <h3>{{ item.name }}</h3>
+              <div class="row">
+                <strong>{{ formatCurrency(item.price) }}</strong>
+                <span>Còn {{ item.stock }}</span>
+              </div>
+              <a-button type="primary" block>Thêm vào giỏ</a-button>
             </div>
-            <a-button type="primary" block>Thêm vào giỏ</a-button>
-          </div>
-        </article>
-        <a-empty v-if="!equipmentItems.length" class="col-span-full" />
-      </div>
+          </article>
+          <a-empty v-if="!fnbItems.length" class="col-span-full" />
+        </div>
+
+        <div v-else class="product-grid">
+          <article v-for="item in deviceItems" :key="item.id" class="product-card">
+            <div
+              class="product-cover"
+              :style="{ backgroundImage: `url(${deviceCover(item.name)})` }"
+            />
+            <div class="product-body">
+              <span class="cat">{{ optionLabel(DEVICE_CATEGORY_OPTIONS, item.category) }} · {{ item.sku }}</span>
+              <h3>{{ item.name }}</h3>
+              <div class="row">
+                <strong>{{ formatCurrency(item.price) }}</strong>
+                <span>Còn {{ item.stock }}</span>
+              </div>
+              <a-button type="primary" block>Thêm vào giỏ</a-button>
+            </div>
+          </article>
+          <a-empty v-if="!deviceItems.length" class="col-span-full" />
+        </div>
+      </a-spin>
     </div>
   </div>
 </template>

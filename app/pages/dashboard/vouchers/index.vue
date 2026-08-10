@@ -1,17 +1,27 @@
 <script setup lang="ts">
 import type { TableColumnsType } from 'ant-design-vue'
 import type { Voucher } from '~/types/management'
-import { mockVouchers } from '~/utils/mock-management'
 import { formatCurrency, formatDate } from '~/utils/format'
 
 definePageMeta({ layout: 'management' })
 
-const data = ref<Voucher[]>([...mockVouchers])
+const router = useRouter()
+const voucherStore = useVoucherStore()
+const data = computed(() => voucherStore.vouchers)
+
+await voucherStore.loadVouchers(true, { page: 1, limit: 100 }).catch(() => undefined)
+
 const { keyword, status, filteredData, resetFilters } = useListFilter(data, {
   getKeywordFields: (item) => [item.code],
   getStatus: (item) => item.status,
 })
-const { open, loading, target, askDelete, confirmDelete } = useDeleteRecord<Voucher>()
+const {
+  open,
+  loading: deleting,
+  target,
+  askDelete,
+  confirmDelete,
+} = useDeleteRecord<Voucher>()
 
 const statusOptions = [
   { value: 'all', label: 'Tất cả trạng thái' },
@@ -29,13 +39,12 @@ const columns: TableColumnsType<Voucher> = [
   { title: 'Bắt đầu', dataIndex: 'startAt', key: 'startAt', width: 120 },
   { title: 'Kết thúc', dataIndex: 'endAt', key: 'endAt', width: 120 },
   { title: 'Trạng thái', dataIndex: 'status', key: 'status', width: 120 },
-  { title: 'Thao tác', key: 'actions', width: 100, align: 'center' },
+  { title: 'Thao tác', key: 'actions', width: 160, align: 'center' },
 ]
 
 async function onConfirmDelete() {
   await confirmDelete(async (record) => {
-    await new Promise((r) => setTimeout(r, 400))
-    data.value = data.value.filter((item) => item.id !== record.id)
+    await voucherStore.remove(record.id)
   })
 }
 </script>
@@ -51,14 +60,31 @@ async function onConfirmDelete() {
       />
       <CommonClientSelect v-model:value="status" :options="statusOptions" class="!w-44" />
       <a-button @click="resetFilters">Đặt lại</a-button>
+      <a-button
+        :loading="voucherStore.loading"
+        @click="voucherStore.loadVouchers(true, { page: 1, limit: 100 })"
+      >
+        Tải lại
+      </a-button>
       <div class="ml-auto">
-        <a-button type="primary">Thêm voucher</a-button>
+        <a-button type="primary" @click="router.push('/dashboard/vouchers/create')">
+          Thêm voucher
+        </a-button>
       </div>
     </div>
+
+    <a-alert
+      v-if="voucherStore.error"
+      class="mb-4"
+      type="error"
+      show-icon
+      :message="voucherStore.error"
+    />
 
     <a-table
       :columns="columns"
       :data-source="filteredData"
+      :loading="voucherStore.loading"
       row-key="id"
       :pagination="{ pageSize: 10 }"
     >
@@ -85,6 +111,13 @@ async function onConfirmDelete() {
           <CommonStatusTag :status="record.status" />
         </template>
         <template v-else-if="column.key === 'actions'">
+          <a-button
+            type="link"
+            size="small"
+            @click="router.push(`/dashboard/vouchers/${record.id}/edit`)"
+          >
+            Sửa
+          </a-button>
           <a-button type="link" danger size="small" @click="askDelete(record)">Xóa</a-button>
         </template>
       </template>
@@ -93,7 +126,7 @@ async function onConfirmDelete() {
     <CommonDeleteRecord
       v-model:open="open"
       :record-name="target?.code"
-      :loading="loading"
+      :loading="deleting"
       @confirm="onConfirmDelete"
     />
   </div>

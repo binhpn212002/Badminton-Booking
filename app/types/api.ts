@@ -63,3 +63,35 @@ export type ApiCourt = ApiTimestamps & {
   reasonForMaintenance: string
   timeSlots: ApiCourtTimeSlot[]
 }
+
+export type ApiDevice = ApiTimestamps & {
+  id: number
+  sku: string
+  name: string
+  category: string
+  stock: number
+  price: number
+  status: string
+}
+
+export type ApiFood = ApiTimestamps & {
+  id: number
+  name: string
+  category: string
+  price: number
+  stock: number
+  status: string
+}
+
+export type ApiVoucher = ApiTimestamps & {
+  id: number
+  code: string
+  type: string
+  value: number
+  minOrderAmount: number
+  usedCount: number
+  maxUsage: number
+  startDate: string
+  endDate: string
+  status: string
+}

@@ -7,7 +7,7 @@ const route = useRoute()
 const titles: Record<string, string> = {
   '/dashboard': 'Tổng quan',
   '/dashboard/courts': 'Sân',
-  '/dashboard/equipment': 'Thiết bị',
+  '/dashboard/devices': 'Thiết bị',
   '/dashboard/fnb': 'Đồ ăn & uống',
   '/dashboard/bookings': 'Danh sách booking',
   '/dashboard/orders': 'Danh sách Order',
@@ -29,6 +29,12 @@ const pageTitle = computed(() => {
   if (route.path === '/dashboard/courts/create') return 'Thêm sân'
   if (/^\/dashboard\/courts\/[^/]+\/edit$/.test(route.path)) return 'Cập nhật sân'
   if (/^\/dashboard\/courts\/[^/]+$/.test(route.path)) return 'Chi tiết sân'
+  if (route.path === '/dashboard/devices/create') return 'Thêm thiết bị'
+  if (/^\/dashboard\/devices\/[^/]+\/edit$/.test(route.path)) return 'Cập nhật thiết bị'
+  if (route.path === '/dashboard/fnb/create') return 'Thêm món'
+  if (/^\/dashboard\/fnb\/[^/]+\/edit$/.test(route.path)) return 'Cập nhật món'
+  if (route.path === '/dashboard/vouchers/create') return 'Thêm voucher'
+  if (/^\/dashboard\/vouchers\/[^/]+\/edit$/.test(route.path)) return 'Cập nhật voucher'
   return titles[route.path] ?? 'Quản lý'
 })
 </script>

@@ -68,9 +68,9 @@ export type ApiListResponse<T> = {
 }
 ```
 
-Ví dụ: `ApiListResponse<ApiCourt>`, `ApiListResponse<ApiEquipment>`.
+Ví dụ: `ApiListResponse<ApiCourt>`, `ApiListResponse<ApiDevice>`.
 
-### Entity type — bám đúng JSON backend
+### Entity type — bám đúng JSON backend   
 
 ```ts
 export type ApiCourt = {
@@ -231,15 +231,15 @@ const list = computed(() => courtStore.courts)
 
 ## 9. Checklist thêm API mới (copy nhanh)
 
-Ví dụ thêm `GET /equipment`:
+Ví dụ thêm `GET /devices`:
 
 1. [ ] Xem response Swagger / curl
-2. [ ] Thêm `ApiEquipment` vào `app/types/api.ts`
-3. [ ] (Nếu cần) thêm type FE + `mapApiEquipmentToEquipment`
-4. [ ] Thêm `fetchEquipments()` trong `app/services/equipment.ts`
-5. [ ] Thêm store `useEquipmentStore` → `loadEquipments()`
-6. [ ] Page: `await store.loadEquipments()` rồi bind UI
-7. [ ] Kiểm tra proxy `/api/be/equipment` chạy được
+2. [ ] Thêm `ApiDevice` vào `app/types/api.ts`
+3. [ ] (Nếu cần) thêm type FE + `mapApiDeviceToDevice`
+4. [ ] Thêm `fetchDevices()` trong `app/services/device.ts`
+5. [ ] Thêm store `useDeviceStore` → `loadDevices()`
+6. [ ] Page: `await store.loadDevices()` rồi bind UI
+7. [ ] Kiểm tra proxy `/api/be/devices` chạy được
 
 ---
 
