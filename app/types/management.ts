@@ -60,11 +60,17 @@ export type Booking = {
   id: string
   code: string
   customerName: string
+  customerPhone: string
   court: string
+  courtId: string
+  courtCode: string
   date: string
   timeSlot: string
+  startHour: number
+  endHour: number
   status: 'pending' | 'confirmed' | 'cancelled' | 'done'
   total: number
+  note: string
   createdAt: string
 }
 

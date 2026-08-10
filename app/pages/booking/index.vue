@@ -225,7 +225,9 @@ onBeforeUnmount(() => {
                 </div>
                 <p class="desc">{{ court.description }}</p>
                 <div class="actions">
-                  <a-button type="primary">Chọn khung giờ</a-button>
+                  <NuxtLink :to="`/booking/${court.id}`">
+                    <a-button type="primary">Xem chi tiết sân</a-button>
+                  </NuxtLink>
                 </div>
               </div>
             </article>

@@ -112,3 +112,21 @@ export type ApiBanner = ApiTimestamps & {
   link: string
   status: string
 }
+
+export type ApiBookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'done'
+
+export type ApiBooking = ApiTimestamps & {
+  id: number
+  code: string
+  customerName: string
+  customerPhone: string
+  courtId: number
+  courtName: string
+  courtCode: string
+  bookingDate: string
+  startHour: number
+  endHour: number
+  total: number
+  status: ApiBookingStatus
+  note: string | null
+}
