@@ -1,8 +1,8 @@
 /** TikTok Login Kit — Sandbox (không dùng Production). */
 export const TIKTOK_ENV = "sandbox" as const;
 
-export const TIKTOK_CLIENT_KEY = "sbaw7oubryb7flszwc";
-export const TIKTOK_CLIENT_SECRET = "TAI1y7bQRhTiMc06jlxwTsjxplGmbI4m";
+export const TIKTOK_CLIENT_KEY = "awuo1c5d8h60w410";
+export const TIKTOK_CLIENT_SECRET = "I6W9lAXWT9CeQMVr4o1cybajCsftI6zX";
 
 /** Phải khớp Redirect URI khai báo ở tab Sandbox → Login Kit */
 export const TIKTOK_REDIRECT_URI =
@@ -12,4 +12,4 @@ export const TIKTOK_REDIRECT_URI =
  * - video.upload  → /v2/post/publish/inbox/video/init/ (draft inbox)
  * - video.publish → /v2/post/publish/video/init/ (direct post)
  */
-export const TIKTOK_SCOPES = "user.info.basic,video.upload,video.publish";
+export const TIKTOK_SCOPES = "user.info.basic,video.upload";
