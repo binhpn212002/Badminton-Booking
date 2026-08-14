@@ -3,6 +3,8 @@ import dayjs, { type Dayjs } from 'dayjs'
 import { message } from 'ant-design-vue'
 import type { Court, Voucher } from '~/types/management'
 import { formatCurrency } from '~/utils/format'
+import { fetchCourtById } from '~/services/court'
+import { mapApiCourtToCourt } from '~/utils/map-court'
 import { readApiError } from '~/services/auth'
 
 definePageMeta({ layout: 'booking' })
@@ -29,8 +31,16 @@ const court = ref<Court | null>(null)
 const loadingCourt = ref(true)
 const loadError = ref<string | null>(null)
 
+type DisplaySlot = {
+  key: string
+  start: number
+  end: number
+  price: number
+  status: SlotStatus
+}
+
 const selectedDate = ref<Dayjs>(dayjs().startOf('day'))
-const selectedHours = ref<number[]>([])
+const selectedSlotKeys = ref<string[]>([])
 
 const checkoutOpen = ref(false)
 const checkoutStep = ref<CheckoutStep>('confirm')
@@ -52,66 +62,48 @@ function pad(hour: number) {
   return `${String(hour).padStart(2, '0')}:00`
 }
 
-function priceForHour(c: Court, hour: number) {
-  for (const slot of c.priceSlots) {
-    const from = parseHour(slot.from)
-    const to = parseHour(slot.to)
-    if (hour >= from && hour < to) return slot.price
-  }
-  return c.priceSlots[0]?.price ?? 0
-}
-
 function coverOf(c: Court) {
   if (c.image && /^https?:\/\//i.test(c.image)) return c.image
   return FALLBACK_COVER
 }
 
-function bookedHoursFromApi() {
-  const booked = new Set<number>()
-  for (const item of bookingStore.bookings) {
-    for (let hour = item.startHour; hour < item.endHour; hour += 1) {
-      booked.add(hour)
-    }
-  }
-  return booked
+function slotOverlapsBooking(start: number, end: number) {
+  return bookingStore.bookings.some(
+    (item) => start < item.endHour && end > item.startHour,
+  )
 }
 
-const hourOptions = computed(() => {
-  if (!court.value) return [] as Array<{ hour: number; price: number; status: SlotStatus }>
-  const from = parseHour(court.value.availableFrom)
-  const to = parseHour(court.value.availableTo)
-  const booked = bookedHoursFromApi()
-  const options: Array<{ hour: number; price: number; status: SlotStatus }> = []
-  for (let hour = from; hour < to; hour += 1) {
-    const hasPrice = court.value.priceSlots.some((slot) => {
-      const slotFrom = parseHour(slot.from)
-      const slotTo = parseHour(slot.to)
-      return hour >= slotFrom && hour < slotTo
-    })
-    if (court.value.priceSlots.length && !hasPrice) continue
-    const isSelected = selectedHours.value.includes(hour)
-    options.push({
-      hour,
-      price: priceForHour(court.value, hour),
-      status: booked.has(hour) ? 'booked' : isSelected ? 'selected' : 'available',
-    })
-  }
-  return options
+const slotOptions = computed((): DisplaySlot[] => {
+  if (!court.value) return []
+  return court.value.priceSlots.map((slot) => {
+    const start = parseHour(slot.from)
+    const end = parseHour(slot.to)
+    const key = `${start}-${end}`
+    const booked = slotOverlapsBooking(start, end)
+    const selected = selectedSlotKeys.value.includes(key)
+    return {
+      key,
+      start,
+      end,
+      price: slot.price,
+      status: booked ? 'booked' : selected ? 'selected' : 'available',
+    }
+  })
 })
+
+const selectedSlots = computed(() =>
+  slotOptions.value.filter((slot) => selectedSlotKeys.value.includes(slot.key)),
+)
 
 const selectedRange = computed(() => {
-  if (!selectedHours.value.length) return null
-  const sorted = [...selectedHours.value].sort((a, b) => a - b)
-  return { start: sorted[0]!, end: sorted[sorted.length - 1]! + 1 }
+  if (!selectedSlots.value.length) return null
+  const sorted = [...selectedSlots.value].sort((a, b) => a.start - b.start)
+  return { start: sorted[0]!.start, end: sorted[sorted.length - 1]!.end }
 })
 
-const subtotal = computed(() => {
-  if (!court.value || !selectedHours.value.length) return 0
-  return selectedHours.value.reduce(
-    (sum, hour) => sum + priceForHour(court.value!, hour),
-    0,
-  )
-})
+const subtotal = computed(() =>
+  selectedSlots.value.reduce((sum, slot) => sum + slot.price, 0),
+)
 
 function voucherTitle(v: Voucher) {
   if (v.type === 'percent') return `Giảm ${v.value}%`
@@ -157,18 +149,20 @@ const stepIndex = computed(() => {
   return 2
 })
 
-function toggleHour(hour: number, status: SlotStatus) {
-  if (status === 'booked') return
-  const set = new Set(selectedHours.value)
-  if (set.has(hour)) set.delete(hour)
-  else set.add(hour)
-  const sorted = [...set].sort((a, b) => a - b)
-  const contiguous = sorted.every((h, i) => i === 0 || h === sorted[i - 1]! + 1)
+function toggleSlot(slot: DisplaySlot) {
+  if (slot.status === 'booked') return
+  const set = new Set(selectedSlotKeys.value)
+  if (set.has(slot.key)) set.delete(slot.key)
+  else set.add(slot.key)
+  const sorted = slotOptions.value.filter((item) => set.has(item.key))
+  const contiguous = sorted.every(
+    (item, i) => i === 0 || item.start === sorted[i - 1]!.end,
+  )
   if (!contiguous) {
     message.warning('Vui lòng chọn các khung giờ liên tiếp')
     return
   }
-  selectedHours.value = sorted
+  selectedSlotKeys.value = sorted.map((item) => item.key)
 }
 
 function disablePastDate(current: Dayjs) {
@@ -176,7 +170,7 @@ function disablePastDate(current: Dayjs) {
 }
 
 watch(selectedDate, () => {
-  selectedHours.value = []
+  selectedSlotKeys.value = []
 })
 
 watch(subtotal, () => {
@@ -195,8 +189,10 @@ async function loadSchedule() {
       Number(court.value.id),
       selectedDate.value.format('YYYY-MM-DD'),
     )
-    const booked = bookedHoursFromApi()
-    selectedHours.value = selectedHours.value.filter((hour) => !booked.has(hour))
+    selectedSlotKeys.value = selectedSlotKeys.value.filter((key) => {
+      const slot = slotOptions.value.find((item) => item.key === key)
+      return slot && slot.status !== 'booked'
+    })
   } catch {
     message.error(bookingStore.error || 'Không tải được lịch đặt sân')
   }
@@ -205,13 +201,13 @@ async function loadSchedule() {
 async function loadCourt() {
   loadingCourt.value = true
   loadError.value = null
+  court.value = null
   try {
-    const found =
-      courtStore.courts.find((c) => c.id === courtId.value) ||
-      (await courtStore.fetchById(courtId.value).catch(() => null))
-    if (!found || found.status !== 'ACTIVE' || !found.isAvailable) {
+    const api = await fetchCourtById(Number(courtId.value))
+    const found = mapApiCourtToCourt(api)
+    courtStore.upsert(found)
+    if (found.status !== 'ACTIVE' || !found.isAvailable) {
       loadError.value = 'Sân không khả dụng để đặt'
-      court.value = null
       return
     }
     court.value = found
@@ -219,9 +215,8 @@ async function loadCourt() {
       loadSchedule(),
       voucherStore.loadVouchers(true, { page: 1, limit: 50 }).catch(() => undefined),
     ])
-  } catch {
-    loadError.value = 'Không tải được thông tin sân'
-    court.value = null
+  } catch (err) {
+    loadError.value = readApiError(err, 'Không tải được thông tin sân')
   } finally {
     loadingCourt.value = false
   }
@@ -232,15 +227,23 @@ onMounted(() => {
   if (authStore.user?.displayName) {
     customerName.value = authStore.user.displayName
   }
-  loadCourt()
 })
+
+watch(
+  courtId,
+  () => {
+    selectedSlotKeys.value = []
+    loadCourt()
+  },
+  { immediate: true },
+)
 
 watch(selectedDate, () => {
   if (court.value) loadSchedule()
 })
 
 function openCheckout() {
-  if (!selectedHours.value.length) {
+  if (!selectedSlotKeys.value.length) {
     message.warning('Hãy chọn ít nhất một khung giờ')
     return
   }
@@ -255,7 +258,7 @@ function closeCheckout() {
 
 function resetAfterSuccess() {
   closeCheckout()
-  selectedHours.value = []
+  selectedSlotKeys.value = []
   customerName.value = ''
   customerPhone.value = ''
   note.value = ''
@@ -424,7 +427,7 @@ function voucherLabel(v: Voucher) {
               <div>
                 <h2>Lịch đặt sân</h2>
                 <p class="hint">
-                  Chọn ngày và khung giờ trống. Slot đã đặt được lấy từ hệ thống.
+                  Chọn ngày và khung giờ trống theo time slot của sân.
                 </p>
               </div>
               <a-tag color="processing">Lịch theo ngày</a-tag>
@@ -450,21 +453,21 @@ function voucherLabel(v: Voucher) {
 
             <div class="slot-grid">
               <button
-                v-for="slot in hourOptions"
-                :key="slot.hour"
+                v-for="slot in slotOptions"
+                :key="slot.key"
                 type="button"
                 class="slot"
                 :class="slot.status"
                 :disabled="slot.status === 'booked'"
-                @click="toggleHour(slot.hour, slot.status)"
+                @click="toggleSlot(slot)"
               >
-                <span class="slot-time">{{ pad(slot.hour) }}–{{ pad(slot.hour + 1) }}</span>
+                <span class="slot-time">{{ pad(slot.start) }}–{{ pad(slot.end) }}</span>
                 <span class="slot-price">
                   {{ slot.status === 'booked' ? 'Đã đặt' : formatCurrency(slot.price) }}
                 </span>
               </button>
             </div>
-            <p v-if="!hourOptions.length" class="hint">Sân chưa cấu hình giờ mở cửa</p>
+            <p v-if="!slotOptions.length" class="hint">Sân chưa có time slot trong hệ thống</p>
           </section>
 
           <!-- Thanh hành động -->
@@ -474,7 +477,7 @@ function voucherLabel(v: Voucher) {
                 <span class="bar-label">Khung giờ</span>
                 <strong v-if="selectedRange">
                   {{ pad(selectedRange.start) }}–{{ pad(selectedRange.end) }}
-                  ({{ selectedHours.length }} giờ)
+                  ({{ selectedSlots.length }} khung)
                 </strong>
                 <strong v-else>—</strong>
               </div>
@@ -486,7 +489,7 @@ function voucherLabel(v: Voucher) {
             <a-button
               type="primary"
               size="large"
-              :disabled="!selectedHours.length"
+              :disabled="!selectedSlotKeys.length"
               @click="openCheckout"
             >
               Đặt sân

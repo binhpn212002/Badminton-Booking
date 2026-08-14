@@ -30,9 +30,13 @@ export async function fetchCourts(params?: { page?: number; limit?: number }) {
 
 export async function fetchCourtById(id: number) {
   const { base, headers } = useApiClient();
-  return await $fetch<ApiCourt>(`${base}/court/${id}`, {
+  const res = await $fetch<ApiCourt | { data: ApiCourt }>(`${base}/court/${id}`, {
     headers,
   });
+  if (res && typeof res === "object" && "data" in res && res.data?.id) {
+    return res.data;
+  }
+  return res as ApiCourt;
 }
 
 export type CourtWritePayload = Omit<

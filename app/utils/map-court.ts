@@ -12,6 +12,15 @@ function mapStatus(status: ApiCourtStatus): CourtStatus {
 }
 
 export function mapApiCourtToCourt(api: ApiCourt): Court {
+  const timeSlots = [...(api.timeSlots || [])].sort((a, b) => a.start - b.start)
+  const priceSlots = timeSlots.map((slot) => ({
+    from: padHour(Number(slot.start)),
+    to: padHour(Number(slot.end)),
+    price: Number(slot.price) || 0,
+  }))
+  const firstSlot = priceSlots[0]
+  const lastSlot = priceSlots[priceSlots.length - 1]
+
   return {
     id: String(api.id),
     branchId: '',
@@ -32,16 +41,12 @@ export function mapApiCourtToCourt(api: ApiCourt): Court {
     airCondition: api.hasConditioning,
     fan: api.hasFans,
     capacity: api.peopleCapacity,
-    priceSlots: (api.timeSlots || []).map((slot) => ({
-      from: padHour(slot.start),
-      to: padHour(slot.end),
-      price: slot.price,
-    })),
+    priceSlots,
     isAvailable: api.isActive && !api.isMaintenance,
     isMaintenance: api.isMaintenance,
     maintenanceReason: api.reasonForMaintenance || '',
-    availableFrom: api.openingHours || '06:00',
-    availableTo: api.endingHours || '22:00',
+    availableFrom: firstSlot?.from || api.openingHours || '06:00',
+    availableTo: lastSlot?.to || api.endingHours || '22:00',
     createdAt: api.createdAt,
   }
 }
