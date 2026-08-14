@@ -104,6 +104,12 @@ export type ApiActivity = ApiTimestamps & {
   status: string
 }
 
+export type ApiUser = ApiTimestamps & {
+  id: number
+  email: string
+  name: string
+}
+
 export type ApiBanner = ApiTimestamps & {
   id: number
   sortOrder: number
