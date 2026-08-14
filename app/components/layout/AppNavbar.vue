@@ -62,11 +62,11 @@ function handleLogout() {
         {{ auth.user?.displayName?.charAt(0) || "U" }}
       </a-avatar>
       <span class="user-name">{{ auth.user?.displayName }}</span>
-      <a-button type="link" class="!px-0" @click="handleLogout">Logout</a-button>
+      <a-button type="link" class="!px-0" @click="handleLogout">Đăng xuất</a-button>
     </div>
     <template v-else>
       <a-button type="primary" class="shrink-0" @click="loginOpen = true">
-        Login
+        Đăng nhập
       </a-button>
       <CommonLoginModal v-model:open="loginOpen" />
     </template>

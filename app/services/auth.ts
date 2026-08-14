@@ -1,4 +1,9 @@
-import type { AuthUser, TikTokLoginResponse } from "~/types/auth";
+import type {
+  ApiAuthResponse,
+  AuthUser,
+  TikTokLoginResponse,
+} from "~/types/auth";
+import { useApiClient } from "~/services/court";
 import {
   TIKTOK_CLIENT_KEY,
   TIKTOK_CLIENT_SECRET,
@@ -185,4 +190,55 @@ function profileOpenId(
   fallback?: string,
 ) {
   return userJson?.data?.user?.open_id || fallback || "";
+}
+
+function mapAuthUser(res: ApiAuthResponse): AuthUser {
+  return {
+    id: String(res.user.id),
+    email: res.user.email,
+    displayName: res.user.name || res.user.email,
+    avatarUrl: "",
+  };
+}
+
+export function readApiError(err: unknown, fallback: string) {
+  const e = err as { data?: { message?: string | string[] }; message?: string };
+  const msg = e?.data?.message ?? e?.message;
+  if (Array.isArray(msg)) return msg.join(", ");
+  if (typeof msg === "string" && msg) return msg;
+  return fallback;
+}
+
+export async function loginWithEmail(payload: {
+  email: string;
+  password: string;
+}) {
+  const { base, headers } = useApiClient();
+  const res = await $fetch<ApiAuthResponse>(`${base}/users/login`, {
+    method: "POST",
+    headers,
+    body: payload,
+  });
+  return {
+    token: res.token,
+    refreshToken: res.refreshToken,
+    user: mapAuthUser(res),
+  };
+}
+
+export async function registerWithEmail(payload: {
+  email: string;
+  password: string;
+}) {
+  const { base, headers } = useApiClient();
+  const res = await $fetch<ApiAuthResponse>(`${base}/users/register`, {
+    method: "POST",
+    headers,
+    body: payload,
+  });
+  return {
+    token: res.token,
+    refreshToken: res.refreshToken,
+    user: mapAuthUser(res),
+  };
 }
