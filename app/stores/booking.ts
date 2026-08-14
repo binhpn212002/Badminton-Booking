@@ -21,7 +21,7 @@ export const useBookingStore = defineStore('booking', () => {
     return fallback
   }
 
-  async function loadByCourtDate(courtId: number, bookingDate: string) {
+  async function loadByCourtDate(courtId: number, orderDate: string) {
     loading.value = true
     error.value = null
     try {
@@ -29,11 +29,9 @@ export const useBookingStore = defineStore('booking', () => {
         page: 1,
         limit: 100,
         courtId,
-        bookingDate,
+        orderDate,
       })
-      bookings.value = res.data
-        .map(mapApiBookingToBooking)
-        .filter((item) => item.status !== 'cancelled')
+      bookings.value = res.data.map(mapApiBookingToBooking)
       return bookings.value
     } catch (err) {
       error.value = readError(err, 'Không tải được lịch đặt sân')

@@ -1,50 +1,15 @@
 <script setup lang="ts">
 import dayjs, { type Dayjs } from 'dayjs'
 import { message } from 'ant-design-vue'
-import type { Court } from '~/types/management'
+import type { Court, Voucher } from '~/types/management'
 import { formatCurrency } from '~/utils/format'
+import { readApiError } from '~/services/auth'
 
 definePageMeta({ layout: 'booking' })
 
 type SlotStatus = 'available' | 'booked' | 'selected'
 type CheckoutStep = 'confirm' | 'payment' | 'done'
 type PaymentMethod = 'transfer' | 'cash'
-
-type MockVoucher = {
-  id: string
-  code: string
-  title: string
-  type: 'percent' | 'fixed'
-  value: number
-  minOrder: number
-}
-
-const MOCK_VOUCHERS: MockVoucher[] = [
-  {
-    id: '1',
-    code: 'WELCOME10',
-    title: 'Giảm 10% lần đặt đầu',
-    type: 'percent',
-    value: 10,
-    minOrder: 100000,
-  },
-  {
-    id: '2',
-    code: 'FIXED50K',
-    title: 'Giảm 50.000đ cuối tuần',
-    type: 'fixed',
-    value: 50000,
-    minOrder: 200000,
-  },
-  {
-    id: '3',
-    code: 'GOLD20',
-    title: 'Giảm 20% khung giờ vàng',
-    type: 'percent',
-    value: 20,
-    minOrder: 150000,
-  },
-]
 
 const QR_IMAGE =
   'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=BADMINTON-BOOKING-DEMO'
@@ -55,6 +20,9 @@ const FALLBACK_COVER =
 const route = useRoute()
 const router = useRouter()
 const courtStore = useCourtStore()
+const bookingStore = useBookingStore()
+const voucherStore = useVoucherStore()
+const authStore = useAuthStore()
 
 const courtId = computed(() => String(route.params.id))
 const court = ref<Court | null>(null)
@@ -73,7 +41,7 @@ const selectedVoucherId = ref<string>('')
 const paymentMethod = ref<PaymentMethod>('transfer')
 const qrOpen = ref(false)
 const bookingCode = ref('')
-const submitting = ref(false)
+const submitting = computed(() => bookingStore.submitting)
 
 function parseHour(value: string) {
   const hour = Number(String(value).split(':')[0])
@@ -98,15 +66,12 @@ function coverOf(c: Court) {
   return FALLBACK_COVER
 }
 
-/** Lịch mock — sau này thay bằng socket realtime */
-function mockBookedHours(c: Court, date: Dayjs) {
-  const dateKey = date.format('YYYY-MM-DD')
-  const seed = [...dateKey, ...c.id].reduce((sum, ch) => sum + ch.charCodeAt(0), 0)
-  const from = parseHour(c.availableFrom)
-  const to = parseHour(c.availableTo)
+function bookedHoursFromApi() {
   const booked = new Set<number>()
-  for (let hour = from; hour < to; hour += 1) {
-    if ((seed + hour) % 5 === 0) booked.add(hour)
+  for (const item of bookingStore.bookings) {
+    for (let hour = item.startHour; hour < item.endHour; hour += 1) {
+      booked.add(hour)
+    }
   }
   return booked
 }
@@ -115,9 +80,15 @@ const hourOptions = computed(() => {
   if (!court.value) return [] as Array<{ hour: number; price: number; status: SlotStatus }>
   const from = parseHour(court.value.availableFrom)
   const to = parseHour(court.value.availableTo)
-  const booked = mockBookedHours(court.value, selectedDate.value)
+  const booked = bookedHoursFromApi()
   const options: Array<{ hour: number; price: number; status: SlotStatus }> = []
   for (let hour = from; hour < to; hour += 1) {
+    const hasPrice = court.value.priceSlots.some((slot) => {
+      const slotFrom = parseHour(slot.from)
+      const slotTo = parseHour(slot.to)
+      return hour >= slotFrom && hour < slotTo
+    })
+    if (court.value.priceSlots.length && !hasPrice) continue
     const isSelected = selectedHours.value.includes(hour)
     options.push({
       hour,
@@ -142,12 +113,28 @@ const subtotal = computed(() => {
   )
 })
 
+function voucherTitle(v: Voucher) {
+  if (v.type === 'percent') return `Giảm ${v.value}%`
+  return `Giảm ${formatCurrency(v.value)}`
+}
+
+const catalogVouchers = computed(() =>
+  voucherStore.vouchers.filter((v) => {
+    if (v.status !== 'active') return false
+    if (v.usedCount >= v.usageLimit) return false
+    const now = dayjs()
+    if (v.startAt && now.isBefore(dayjs(v.startAt))) return false
+    if (v.endAt && now.isAfter(dayjs(v.endAt))) return false
+    return true
+  }),
+)
+
 const applicableVouchers = computed(() =>
-  MOCK_VOUCHERS.filter((v) => subtotal.value >= v.minOrder),
+  catalogVouchers.value.filter((v) => subtotal.value >= v.minOrder),
 )
 
 const selectedVoucher = computed(
-  () => MOCK_VOUCHERS.find((v) => v.id === selectedVoucherId.value) ?? null,
+  () => catalogVouchers.value.find((v) => v.id === selectedVoucherId.value) ?? null,
 )
 
 const discount = computed(() => {
@@ -201,6 +188,20 @@ watch(subtotal, () => {
   }
 })
 
+async function loadSchedule() {
+  if (!court.value) return
+  try {
+    await bookingStore.loadByCourtDate(
+      Number(court.value.id),
+      selectedDate.value.format('YYYY-MM-DD'),
+    )
+    const booked = bookedHoursFromApi()
+    selectedHours.value = selectedHours.value.filter((hour) => !booked.has(hour))
+  } catch {
+    message.error(bookingStore.error || 'Không tải được lịch đặt sân')
+  }
+}
+
 async function loadCourt() {
   loadingCourt.value = true
   loadError.value = null
@@ -214,6 +215,10 @@ async function loadCourt() {
       return
     }
     court.value = found
+    await Promise.all([
+      loadSchedule(),
+      voucherStore.loadVouchers(true, { page: 1, limit: 50 }).catch(() => undefined),
+    ])
   } catch {
     loadError.value = 'Không tải được thông tin sân'
     court.value = null
@@ -222,7 +227,17 @@ async function loadCourt() {
   }
 }
 
-onMounted(loadCourt)
+onMounted(() => {
+  authStore.hydrate()
+  if (authStore.user?.displayName) {
+    customerName.value = authStore.user.displayName
+  }
+  loadCourt()
+})
+
+watch(selectedDate, () => {
+  if (court.value) loadSchedule()
+})
 
 function openCheckout() {
   if (!selectedHours.value.length) {
@@ -250,6 +265,34 @@ function resetAfterSuccess() {
   bookingCode.value = ''
 }
 
+async function submitBooking() {
+  if (!court.value || !selectedRange.value) {
+    message.warning('Hãy chọn ít nhất một khung giờ')
+    return null
+  }
+  try {
+    const created = await bookingStore.submit({
+      courtId: Number(court.value.id),
+      orderDate: selectedDate.value.format('YYYY-MM-DD'),
+      start: selectedRange.value.start,
+      end: selectedRange.value.end,
+      totalPrice: totalPrice.value,
+      name: customerName.value.trim(),
+      phoneNumber: customerPhone.value.trim(),
+      note: note.value.trim() || undefined,
+      voucherCode: selectedVoucher.value?.code,
+    })
+    bookingCode.value = created.code
+    checkoutStep.value = 'done'
+    qrOpen.value = false
+    await loadSchedule()
+    return created
+  } catch (err) {
+    message.error(readApiError(err, bookingStore.error || 'Không tạo được đặt sân'))
+    return null
+  }
+}
+
 function goToPayment() {
   if (!customerName.value.trim() || !customerPhone.value.trim()) {
     message.warning('Nhập họ tên và số điện thoại')
@@ -258,25 +301,18 @@ function goToPayment() {
   checkoutStep.value = 'payment'
 }
 
-function finishCashPayment() {
-  submitting.value = true
-  window.setTimeout(() => {
-    bookingCode.value = `BK${dayjs().format('YYMMDD')}${Math.floor(Math.random() * 900 + 100)}`
-    checkoutStep.value = 'done'
-    submitting.value = false
-    message.success('Thanh toán tiền mặt thành công')
-  }, 500)
+async function finishCashPayment() {
+  const created = await submitBooking()
+  if (created) message.success('Đặt sân thành công. Thanh toán tiền mặt khi đến sân.')
 }
 
 function openTransferQr() {
   qrOpen.value = true
 }
 
-function confirmTransferPaid() {
-  bookingCode.value = `BK${dayjs().format('YYMMDD')}${Math.floor(Math.random() * 900 + 100)}`
-  qrOpen.value = false
-  checkoutStep.value = 'done'
-  message.success('Đã ghi nhận chuyển khoản')
+async function confirmTransferPaid() {
+  const created = await submitBooking()
+  if (created) message.success('Đã ghi nhận đặt sân')
 }
 
 function onConfirmPayment() {
@@ -287,7 +323,7 @@ function onConfirmPayment() {
   openTransferQr()
 }
 
-function voucherLabel(v: MockVoucher) {
+function voucherLabel(v: Voucher) {
   if (v.type === 'percent') return `−${v.value}%`
   return `−${formatCurrency(v.value)}`
 }
@@ -388,10 +424,10 @@ function voucherLabel(v: MockVoucher) {
               <div>
                 <h2>Lịch đặt sân</h2>
                 <p class="hint">
-                  Chọn ngày và khung giờ trống. Lịch sẽ cập nhật realtime qua socket sau này.
+                  Chọn ngày và khung giờ trống. Slot đã đặt được lấy từ hệ thống.
                 </p>
               </div>
-              <a-tag color="processing">Mock · Socket sắp có</a-tag>
+              <a-tag color="processing">Lịch theo ngày</a-tag>
             </div>
 
             <div class="date-row">
@@ -532,7 +568,7 @@ function voucherLabel(v: MockVoucher) {
               </div>
             </label>
             <label
-              v-for="v in MOCK_VOUCHERS"
+              v-for="v in catalogVouchers"
               :key="v.id"
               class="voucher-item"
               :class="{ disabled: subtotal < v.minOrder, active: selectedVoucherId === v.id }"
@@ -543,7 +579,7 @@ function voucherLabel(v: MockVoucher) {
                   <strong>{{ v.code }}</strong>
                   <span class="voucher-badge">{{ voucherLabel(v) }}</span>
                 </div>
-                <p>{{ v.title }}</p>
+                <p>{{ voucherTitle(v) }}</p>
                 <p class="voucher-min">Đơn tối thiểu {{ formatCurrency(v.minOrder) }}</p>
               </div>
             </label>
@@ -653,7 +689,7 @@ function voucherLabel(v: MockVoucher) {
         </p>
         <div class="checkout-actions">
           <a-button @click="qrOpen = false">Đóng</a-button>
-          <a-button type="primary" @click="confirmTransferPaid">Tôi đã chuyển khoản</a-button>
+          <a-button type="primary" :loading="submitting" @click="confirmTransferPaid">Tôi đã chuyển khoản</a-button>
         </div>
       </div>
     </a-modal>

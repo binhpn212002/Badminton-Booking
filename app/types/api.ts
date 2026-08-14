@@ -117,16 +117,16 @@ export type ApiBookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'done'
 
 export type ApiBooking = ApiTimestamps & {
   id: number
-  code: string
-  customerName: string
-  customerPhone: string
-  courtId: number
-  courtName: string
-  courtCode: string
-  bookingDate: string
-  startHour: number
-  endHour: number
-  total: number
-  status: ApiBookingStatus
+  name: string
+  phoneNumber: string
+  court?: {
+    id: number
+    name: string
+    courtCode: string
+  } | null
+  orderDate: string
+  start: number
+  end: number
+  totalPrice: number
   note: string | null
 }

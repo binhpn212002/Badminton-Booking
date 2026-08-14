@@ -6,24 +6,25 @@ function padHour(hour: number) {
 }
 
 function normalizeDate(value: string) {
-  return value.slice(0, 10)
+  return String(value).slice(0, 10)
 }
 
 export function mapApiBookingToBooking(api: ApiBooking): Booking {
+  const date = normalizeDate(api.orderDate)
   return {
     id: String(api.id),
-    code: api.code,
-    customerName: api.customerName,
-    customerPhone: api.customerPhone,
-    court: api.courtName,
-    courtId: String(api.courtId),
-    courtCode: api.courtCode,
-    date: normalizeDate(api.bookingDate),
-    timeSlot: `${padHour(api.startHour)}–${padHour(api.endHour)}`,
-    startHour: api.startHour,
-    endHour: api.endHour,
-    status: api.status,
-    total: api.total,
+    code: `BK${String(api.id).padStart(6, '0')}`,
+    customerName: api.name,
+    customerPhone: api.phoneNumber,
+    court: api.court?.name || '',
+    courtId: String(api.court?.id ?? ''),
+    courtCode: api.court?.courtCode || '',
+    date,
+    timeSlot: `${padHour(api.start)}–${padHour(api.end)}`,
+    startHour: api.start,
+    endHour: api.end,
+    status: 'confirmed',
+    total: api.totalPrice,
     note: api.note || '',
     createdAt: api.createdAt,
   }
