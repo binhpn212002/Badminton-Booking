@@ -13,7 +13,7 @@ export function useApiClient() {
     if (token) headers.Authorization = `Bearer ${token}`;
   }
 
-  return { base, headers };
+  return { base, headers, timeout: 8000 };
 }
 
 export async function fetchCourts(params?: { page?: number; limit?: number }) {

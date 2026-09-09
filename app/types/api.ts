@@ -108,6 +108,7 @@ export type ApiUser = ApiTimestamps & {
   id: number
   email: string
   name: string
+  role?: 'admin' | 'staff' | 'customer'
 }
 
 export type ApiBanner = ApiTimestamps & {
@@ -130,9 +131,34 @@ export type ApiBooking = ApiTimestamps & {
     name: string
     courtCode: string
   } | null
+  user?: {
+    id: number
+    email: string
+    name: string
+  } | null
+  voucher?: {
+    id: number
+    code: string
+    type: string
+    value: number
+  } | null
   orderDate: string
   start: number
   end: number
+  subtotalPrice?: number
+  discountAmount?: number
   totalPrice: number
   note: string | null
+  status: ApiBookingStatus
+}
+
+export type ApiBookingReportSummary = {
+  totalRevenue: number
+  totalBookings: number
+  rows: Array<{
+    date: string
+    revenue: number
+    bookings: number
+    courtsUsed: number
+  }>
 }

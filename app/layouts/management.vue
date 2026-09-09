@@ -3,6 +3,21 @@ import AppSidebar from '~/components/layout/AppSidebar.vue'
 
 const collapsed = ref(false)
 const route = useRoute()
+const auth = useAuthStore()
+
+onMounted(() => {
+  auth.hydrate()
+  if (!auth.isLoggedIn || !auth.canAccessDashboard) {
+    navigateTo('/')
+  }
+})
+
+watch(
+  () => [auth.isLoggedIn, auth.canAccessDashboard] as const,
+  ([loggedIn, canAccess]) => {
+    if (!loggedIn || !canAccess) navigateTo('/')
+  },
+)
 
 const titles: Record<string, string> = {
   '/dashboard': 'Tổng quan',
@@ -22,7 +37,6 @@ const titles: Record<string, string> = {
   '/dashboard/settings/zalo-oa': 'Cấu hình ZaloOA',
   '/dashboard/settings/vnpay': 'Cấu hình VNPay',
   '/dashboard/settings/google': 'Cấu hình Google',
-  '/dashboard/settings/tiktok': 'Cấu hình TikTok',
 }
 
 const pageTitle = computed(() => {

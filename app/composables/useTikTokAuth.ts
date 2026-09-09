@@ -1,8 +1,4 @@
-import {
-  TIKTOK_CLIENT_KEY,
-  TIKTOK_REDIRECT_URI,
-  TIKTOK_SCOPES,
-} from "~/utils/tiktok-credentials";
+import { fetchTikTokConfig } from "~/services/auth";
 
 const STATE_KEY = "tiktok_oauth_state";
 
@@ -14,12 +10,17 @@ function randomState() {
 }
 
 export function useTikTokAuth() {
-  function getAuthorizeUrl() {
+  async function getAuthorizeUrl() {
+    const config = await fetchTikTokConfig();
+    if (!config.clientKey) {
+      throw new Error("Thiếu TIKTOK_CLIENT_KEY trên server");
+    }
+
     const state = randomState();
     if (import.meta.client) {
       sessionStorage.setItem(STATE_KEY, state);
-      // Xóa token/session cũ trước khi xin scope mới
       localStorage.removeItem("token");
+      localStorage.removeItem("refreshToken");
       localStorage.removeItem("user");
       localStorage.removeItem("tiktok_scope");
       localStorage.removeItem("tiktok_open_id");
@@ -27,19 +28,18 @@ export function useTikTokAuth() {
     }
 
     const params = new URLSearchParams({
-      client_key: TIKTOK_CLIENT_KEY,
-      scope: TIKTOK_SCOPES,
+      client_key: config.clientKey,
+      scope: config.scopes || "user.info.basic",
       response_type: "code",
-      redirect_uri: TIKTOK_REDIRECT_URI,
+      redirect_uri: config.redirectUri,
       state,
     });
 
     return `https://www.tiktok.com/v2/auth/authorize/?${params.toString()}`;
   }
 
-  function startLogin() {
-    const url = getAuthorizeUrl();
-    console.log("[TikTok] authorize URL", url);
+  async function startLogin() {
+    const url = await getAuthorizeUrl();
     window.location.href = url;
   }
 

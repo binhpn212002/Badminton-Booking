@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import type { TableColumnsType } from 'ant-design-vue'
 import type { Banner } from '~/types/management'
-import { mockBanners } from '~/utils/mock-management'
 
 definePageMeta({ layout: 'management' })
 
-const data = ref<Banner[]>([...mockBanners])
+const bannerStore = useBannerStore()
+const data = computed(() => bannerStore.banners)
+
+await bannerStore.loadBanners(true, { page: 1, limit: 100 }).catch(() => undefined)
+
 const { keyword, status, filteredData, resetFilters } = useListFilter(data, {
   getKeywordFields: (item) => [item.title, item.link],
   getStatus: (item) => item.status,
@@ -29,8 +32,7 @@ const columns: TableColumnsType<Banner> = [
 
 async function onConfirmDelete() {
   await confirmDelete(async (record) => {
-    await new Promise((r) => setTimeout(r, 400))
-    data.value = data.value.filter((item) => item.id !== record.id)
+    await bannerStore.remove(record.id)
   })
 }
 </script>
@@ -46,19 +48,35 @@ async function onConfirmDelete() {
       />
       <CommonClientSelect v-model:value="status" :options="statusOptions" class="!w-44" />
       <a-button @click="resetFilters">Đặt lại</a-button>
-      <div class="ml-auto">
-        <a-button type="primary">Thêm banner</a-button>
-      </div>
+      <a-button
+        :loading="bannerStore.loading"
+        @click="bannerStore.loadBanners(true, { page: 1, limit: 100 })"
+      >
+        Tải lại
+      </a-button>
     </div>
+
+    <a-alert
+      v-if="bannerStore.error"
+      class="mb-4"
+      type="error"
+      show-icon
+      :message="bannerStore.error"
+    />
 
     <a-table
       :columns="columns"
       :data-source="filteredData"
       row-key="id"
+      :loading="bannerStore.loading"
       :pagination="{ pageSize: 10 }"
     >
       <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'status'">
+        <template v-if="column.key === 'image'">
+          <a-image v-if="record.image" :src="record.image" :width="64" :height="40" />
+          <span v-else>—</span>
+        </template>
+        <template v-else-if="column.key === 'status'">
           <CommonStatusTag :status="record.status" />
         </template>
         <template v-else-if="column.key === 'actions'">

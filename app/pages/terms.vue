@@ -106,7 +106,7 @@ useSeoMeta({
         <h2>9. Liên hệ</h2>
         <p>
           Mọi thắc mắc về Điều khoản sử dụng, vui lòng liên hệ:
-          <a href="mailto:support@badmintonbooking.local">support@badmintonbooking.local</a>
+          <a href="mailto:teamgf2002@gmail.com">teamgf2002@gmail.com</a>
         </p>
       </section>
     </article>

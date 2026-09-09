@@ -25,7 +25,7 @@ type CartItem = {
   image: string
 }
 
-type MockVoucher = {
+type ShopVoucher = {
   id: string
   code: string
   title: string
@@ -33,33 +33,6 @@ type MockVoucher = {
   value: number
   minOrder: number
 }
-
-const MOCK_VOUCHERS: MockVoucher[] = [
-  {
-    id: '1',
-    code: 'SHOP10',
-    title: 'Giảm 10% đơn hàng cửa hàng',
-    type: 'percent',
-    value: 10,
-    minOrder: 50000,
-  },
-  {
-    id: '2',
-    code: 'DRINK15K',
-    title: 'Giảm 15.000đ đồ uống',
-    type: 'fixed',
-    value: 15000,
-    minOrder: 30000,
-  },
-  {
-    id: '3',
-    code: 'GEAR50K',
-    title: 'Giảm 50.000đ khi mua thiết bị',
-    type: 'fixed',
-    value: 50000,
-    minOrder: 200000,
-  },
-]
 
 const QR_IMAGE =
   'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=BADMINTON-SHOP-ORDER-DEMO'
@@ -95,11 +68,36 @@ const deviceImages: Record<string, string> = {
 
 const foodStore = useFoodStore()
 const deviceStore = useDeviceStore()
+const voucherStore = useVoucherStore()
 
 await Promise.all([
   foodStore.loadFoods(true, { page: 1, limit: 100 }).catch(() => undefined),
   deviceStore.loadDevices(true, { page: 1, limit: 100 }).catch(() => undefined),
+  voucherStore.loadVouchers(true, { page: 1, limit: 100 }).catch(() => undefined),
 ])
+
+const shopVouchers = computed<ShopVoucher[]>(() =>
+  voucherStore.vouchers
+    .filter((v) => v.status === 'active')
+    .filter((v) => {
+      const now = dayjs()
+      return (
+        (!v.startAt || !now.isBefore(dayjs(v.startAt), 'day')) &&
+        (!v.endAt || !now.isAfter(dayjs(v.endAt), 'day'))
+      )
+    })
+    .map((v) => ({
+      id: v.id,
+      code: v.code,
+      title:
+        v.type === 'percent'
+          ? `Giảm ${v.value}% đơn hàng`
+          : `Giảm ${formatCurrency(v.value)}`,
+      type: v.type,
+      value: v.value,
+      minOrder: v.minOrder,
+    })),
+)
 
 const tab = ref<ProductKind>('fnb')
 const keyword = ref('')
@@ -159,11 +157,11 @@ const subtotal = computed(() =>
 )
 
 const applicableVouchers = computed(() =>
-  MOCK_VOUCHERS.filter((v) => subtotal.value >= v.minOrder),
+  shopVouchers.value.filter((v) => subtotal.value >= v.minOrder),
 )
 
 const selectedVoucher = computed(
-  () => MOCK_VOUCHERS.find((v) => v.id === selectedVoucherId.value) ?? null,
+  () => shopVouchers.value.find((v) => v.id === selectedVoucherId.value) ?? null,
 )
 
 const discount = computed(() => {
@@ -314,7 +312,7 @@ function resetAfterSuccess() {
   orderCode.value = ''
 }
 
-function voucherLabel(v: MockVoucher) {
+function voucherLabel(v: ShopVoucher) {
   if (v.type === 'percent') return `−${v.value}%`
   return `−${formatCurrency(v.value)}`
 }
@@ -564,7 +562,7 @@ function voucherLabel(v: MockVoucher) {
               </div>
             </label>
             <label
-              v-for="v in MOCK_VOUCHERS"
+              v-for="v in shopVouchers"
               :key="v.id"
               class="voucher-item"
               :class="{ disabled: subtotal < v.minOrder, active: selectedVoucherId === v.id }"

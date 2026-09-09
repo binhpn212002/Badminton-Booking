@@ -23,7 +23,7 @@ export function mapApiBookingToBooking(api: ApiBooking): Booking {
     timeSlot: `${padHour(api.start)}–${padHour(api.end)}`,
     startHour: api.start,
     endHour: api.end,
-    status: 'confirmed',
+    status: api.status || 'pending',
     total: api.totalPrice,
     note: api.note || '',
     createdAt: api.createdAt,

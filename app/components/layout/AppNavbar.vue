@@ -62,6 +62,13 @@ function handleLogout() {
         {{ auth.user?.displayName?.charAt(0) || "U" }}
       </a-avatar>
       <span class="user-name">{{ auth.user?.displayName }}</span>
+      <NuxtLink
+        v-if="auth.canAccessDashboard"
+        to="/dashboard/courts"
+        class="dashboard-link"
+      >
+        Quản trị
+      </NuxtLink>
       <a-button type="link" class="!px-0" @click="handleLogout">Đăng xuất</a-button>
     </div>
     <template v-else>
@@ -106,5 +113,16 @@ function handleLogout() {
   white-space: nowrap;
   color: #374151;
   font-size: 0.9rem;
+}
+
+.dashboard-link {
+  color: #26c73e;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.dashboard-link:hover {
+  text-decoration: underline;
 }
 </style>

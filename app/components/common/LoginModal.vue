@@ -77,10 +77,10 @@ async function handleRegister() {
   }
 }
 
-function handleTikTokLogin() {
+async function handleTikTokLogin() {
   try {
     tiktokLoading.value = true;
-    startLogin();
+    await startLogin();
   } catch (e: unknown) {
     tiktokLoading.value = false;
     message.error(

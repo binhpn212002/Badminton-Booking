@@ -17,6 +17,10 @@ export const useAuthStore = defineStore("auth", () => {
   const expiresIn = ref<number | null>(null);
 
   const isLoggedIn = computed(() => Boolean(token.value));
+  const role = computed(() => user.value?.role || 'customer');
+  const isAdmin = computed(() => role.value === 'admin');
+  const isStaff = computed(() => role.value === 'staff' || role.value === 'admin');
+  const canAccessDashboard = computed(() => isStaff.value);
   const hasVideoUpload = computed(() =>
     (scope.value || "").split(",").map((s) => s.trim()).includes("video.upload"),
   );
@@ -96,6 +100,10 @@ export const useAuthStore = defineStore("auth", () => {
     openId,
     expiresIn,
     isLoggedIn,
+    role,
+    isAdmin,
+    isStaff,
+    canAccessDashboard,
     hasVideoUpload,
     hydrate,
     setSession,

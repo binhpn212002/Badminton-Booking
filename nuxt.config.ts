@@ -1,7 +1,8 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
-  devtools: { enabled: true },
+  devtools: { enabled: false },
+  ssr: false,
   modules: ["@pinia/nuxt", "@nuxtjs/tailwindcss"],
   css: ["~/assets/css/main.css"],
   runtimeConfig: {
@@ -11,8 +12,15 @@ export default defineNuxtConfig({
       apiOrigin: process.env.NUXT_PUBLIC_API_ORIGIN || "http://localhost:3001",
     },
   },
-  nitro: {
-    preset: "static",
+  // Chỉ dùng static khi generate/build deploy; để trống khi `nuxt dev`
+  nitro: process.env.NODE_ENV === "production" ? { preset: "static" } : {},
+  vite: {
+    server: {
+      watch: {
+        usePolling: false,
+        ignored: ["**/node_modules/**", "**/.git/**"],
+      },
+    },
   },
   app: {
     head: {

@@ -7,7 +7,7 @@ export function mapApiUserToUser(api: ApiUser): User {
     name: api.name || api.email,
     email: api.email,
     phone: '',
-    role: 'customer',
+    role: api.role || 'customer',
     status: 'active',
     createdAt: api.createdAt,
   }

@@ -4,12 +4,16 @@ export type AuthUser = {
   openId?: string
   displayName: string
   avatarUrl?: string
+  role?: 'admin' | 'staff' | 'customer'
 }
 
 export type ApiAuthUser = {
   id: number
   email: string
   name: string
+  role: 'admin' | 'staff' | 'customer'
+  avatarUrl?: string | null
+  tiktokOpenId?: string | null
 }
 
 export type ApiAuthResponse = {
@@ -17,13 +21,3 @@ export type ApiAuthResponse = {
   refreshToken: string
   user: ApiAuthUser
 }
-
-export type TikTokLoginResponse = {
-  accessToken: string;
-  refreshToken?: string;
-  openId: string;
-  expiresIn: number;
-  /** Ví dụ: user.info.basic,video.upload */
-  scope: string;
-  user: AuthUser;
-};
