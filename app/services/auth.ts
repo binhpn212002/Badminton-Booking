@@ -66,18 +66,3 @@ export async function fetchTikTokConfig() {
     headers,
   });
 }
-
-/** Đổi code TikTok → JWT app qua NestJS BE (secret không lộ browser). */
-export async function loginWithTikTokCode(code: string) {
-  const { base, headers } = useApiClient();
-  const res = await $fetch<ApiAuthResponse>(`${base}/users/auth/tiktok`, {
-    method: "POST",
-    headers,
-    body: { code },
-  });
-  return {
-    token: res.token,
-    refreshToken: res.refreshToken,
-    user: mapAuthUser(res),
-  };
-}

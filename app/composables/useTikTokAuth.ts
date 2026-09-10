@@ -1,14 +1,5 @@
 import { fetchTikTokConfig } from "~/services/auth";
 
-const STATE_KEY = "tiktok_oauth_state";
-
-function randomState() {
-  if (import.meta.client && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-}
-
 export function useTikTokAuth() {
   async function getAuthorizeUrl() {
     const config = await fetchTikTokConfig();
@@ -16,9 +7,7 @@ export function useTikTokAuth() {
       throw new Error("Thiếu TIKTOK_CLIENT_KEY trên server");
     }
 
-    const state = randomState();
     if (import.meta.client) {
-      sessionStorage.setItem(STATE_KEY, state);
       localStorage.removeItem("token");
       localStorage.removeItem("refreshToken");
       localStorage.removeItem("user");
@@ -26,6 +15,11 @@ export function useTikTokAuth() {
       localStorage.removeItem("tiktok_open_id");
       localStorage.removeItem("tiktok_expires_in");
     }
+
+    const state =
+      import.meta.client && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}`;
 
     const params = new URLSearchParams({
       client_key: config.clientKey,
@@ -43,13 +37,5 @@ export function useTikTokAuth() {
     window.location.href = url;
   }
 
-  function consumeState(returnedState?: string | null) {
-    if (!import.meta.client) return false;
-    const expected = sessionStorage.getItem(STATE_KEY);
-    sessionStorage.removeItem(STATE_KEY);
-    if (!expected || !returnedState) return false;
-    return expected === returnedState;
-  }
-
-  return { getAuthorizeUrl, startLogin, consumeState };
+  return { getAuthorizeUrl, startLogin };
 }

@@ -18,16 +18,9 @@
   status = 200
   force = true
 
-# Keep OAuth query (?code=&state=) — avoid 301 on callback
-[[redirects]]
-  from = "/auth/tiktok/callback"
-  to = "/auth/tiktok/callback/"
-  status = 200
-  force = true
-
 # Proxy BE API for browser calls on Netlify static hosting
 [[redirects]]
   from = "/api/be/*"
-  to = "https://1f383m5q-3000.asse.devtunnels.ms/:splat"
+  to = "https://spt-api.pnmn.click/:splat"
   status = 200
   force = true
